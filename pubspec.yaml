@@ -1,0 +1,4 @@
+name: zone_di
+version: 1.0.0
+dev_dependencies:
+  test: any
