@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 
-class _NoValue {}
+enum SentinelValues { noValue }
 
 class Token<T> {
-  Token(this._debugName) : _defaultValue = _NoValue;
-  Token.withDefault(this._debugName, T this._defaultValue);
+  Token(this._debugName) : _defaultValue = SentinelValues.noValue;
+  Token.withDefault(this._debugName, T defaultValue)
+      : _defaultValue = defaultValue;
 
   final String _debugName;
   final Object _defaultValue;
@@ -17,57 +19,75 @@ class Token<T> {
 
 typedef ValueFactory<T> = T Function();
 
+/// Throws a [CastError] if [values] contains a (`Token<T>`, value) pair where
+/// value is not assignable to `T`.
 R provide<R>(Map<Token, dynamic> values, R Function() f) =>
     runZoned(f, zoneValues: {
-      Injector: Injector(values.map((t, v) => t._cast(v))),
+      Injector: Injector(values.map((t, v) => MapEntry(t, t._cast(v)))),
     });
 
+/// Alias of `provide({token: value}, f)`.
 R provideSingle<T, R>(Token<T> token, T value, R Function() f) =>
-    runZoned(f, zoneValues: {token: value});
+    runZoned(f, zoneValues: {
+      Injector: Injector({token: value})
+    });
 
+///
 R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
   final injector = FactoryInjector(factories);
-  for (final token in factories.keys) injector.get(token);
+  runZoned(() {
+    injector.zone = Zone.current;
+    for (final token in factories.keys) injector.get(token);
+  }, zoneValues: {Injector: injector});
+
   return provide(injector.values, f);
 }
 
+/// Returns the value provided for [token], or the tokens default value if no
+/// value was provided.
 T inject<T>(Token<T> token) =>
-    ((Zone.current[Injector] as Injector) ?? Injector.root).get(token);
+    ((Zone.current[Injector] as Injector) ?? const Injector.empty()).get(token);
 
 class Injector {
-  Injector(this.values);
-  const Injector.empty() : values = const {};
+  Injector(this.values) : parent = Zone.current[Injector];
+  const Injector.empty()
+      : values = const {},
+        parent = null;
 
   final Map<Token, Object> values;
+  final Injector parent;
 
   T get<T>(Token<T> token) {
     if (values.containsKey(token)) return token._cast(values[token]);
-    final parent = Zone.current.parent[Injector] as Injector;
     if (parent != null) return parent.get(token);
-    if (token._defaultValue != _NoValue) return token._defaultValue;
+    if (token._defaultValue != SentinelValues.noValue) {
+      return token._defaultValue;
+    }
     throw MissingDependencyException(token);
   }
-
-  static Injector forZone(Zone zone) =>
-      (zone[Injector] as Injector) ?? const Injector.empty();
-
-  static Injector parent() =>
-      (Zone.current[Injector] as Injector) ?? const Injector.empty();
 }
 
 class FactoryInjector extends Injector {
-  FactoryInjector(this.factories)
-      : context = Zone.current,
-        super({});
+  FactoryInjector(this.factories) : super({});
 
   final Map<Token, ValueFactory> factories;
-  final Zone context;
-  final Set<Token> factoriesCalled = {};
+  final underConstruction = LinkedHashSet<Token>();
+  Zone zone;
 
   @override
   T get<T>(Token<T> token) {
-    if (values.containsKey(token)) return values[token];
     if (!factories.containsKey(token)) return super.get(token);
+    if (!values.containsKey(token)) {
+      final underConstructionAlready = !underConstruction.add(token);
+      if (underConstructionAlready) {
+        throw CircularDependencyException(
+            List.unmodifiable(underConstruction.skipWhile((t) => t != token)));
+      }
+      values[token] = zone.run(factories[token]);
+      assert(underConstruction.last == token);
+      underConstruction.remove(token);
+    }
+    return values[token];
   }
 }
 
@@ -82,4 +102,13 @@ class MissingDependencyException implements Exception {
   String toString() =>
       'MissingDependencyException: No value has been provided for $token, '
       'and it has no default value';
+}
+
+class CircularDependencyException implements Exception {
+  CircularDependencyException(this.tokens);
+  final List<Token> tokens;
+
+  @override
+  String toString() => 'The factories for these tokens depend on each other: '
+      '${tokens.join(" -> ")} -> ${tokens.first}';
 }
