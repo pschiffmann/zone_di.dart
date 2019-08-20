@@ -9,6 +9,8 @@ final tokenS1 = Token<String>('S1');
 final tokenS2 = Token<String>('S2');
 final tokenStrWithDefault =
     Token.withDefault('StrWithDefault', 'StrWithDefault default value');
+final tokenNullStrWithDefault =
+    Token<String>.withDefault('NullStrWithDefault', null);
 
 final tokenA = Token<A>('A');
 final tokenB = Token<B>('B');
@@ -74,11 +76,18 @@ void main() {
 
     test('with not-provided token uses default value if available', () {
       expect(inject(tokenStrWithDefault), 'StrWithDefault default value');
+      expect(inject(tokenNullStrWithDefault), isNull);
     });
 
     test('prefers provided to default value', () {
-      provide({tokenStrWithDefault: 'provided'}, () {
-        expect(inject(tokenStrWithDefault), 'provided');
+      provideSingle(tokenStrWithDefault, 'provided', () {
+        provideSingle(tokenS1, 'S1 value', () {
+          expect(inject(tokenStrWithDefault), 'provided');
+        });
+      });
+
+      provideSingle(tokenStrWithDefault, null, () {
+        expect(inject(tokenStrWithDefault), isNull);
       });
     });
 
@@ -134,6 +143,23 @@ void main() {
       } on CircularDependencyException catch (e) {
         expect(e.tokens, [tokenE, tokenF, tokenG]);
       }
+
+      try {
+        provideFactories(
+          {tokenS1: () => inject(tokenS1)},
+          () {},
+        );
+        fail('should have thrown CircularDependencyException');
+      } on CircularDependencyException catch (e) {
+        expect(e.tokens, [tokenS1]);
+      }
+    });
+
+    test('handles null values', () {
+      provideFactories({tokenA: () => null, tokenC: () => C()}, () {
+        expect(inject(tokenA), isNull);
+        expect(inject(tokenC).a, isNull);
+      });
     });
   });
 }

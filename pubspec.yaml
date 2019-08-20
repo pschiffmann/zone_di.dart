@@ -1,4 +1,7 @@
 name: zone_di
+description: Dependency injection with a functional API that works without code generation, mirrors or passing around Injector objects.
 version: 1.0.0
+dependencies:
+  meta: ^1.1.7
 dev_dependencies:
   test: any
