@@ -1,7 +1,14 @@
 name: zone_di
-description: Dependency injection with a functional API that works without code generation, mirrors or passing around Injector objects.
 version: 1.0.0
+description: Dependency injection with a functional API that works without code generation, mirrors or passing around Injector objects.
+authors:
+  - Philipp Schiffmann <philippschiffmann93@gmail.com>
+homepage: https://github.com/pschiffmann/zone_di.dart
+environment:
+  sdk: ">=2.0.0 <3.0.0"
+
 dependencies:
   meta: ^1.1.7
 dev_dependencies:
-  test: any
+  test: ^1.6.7
+  pedantic: ^1.8.0

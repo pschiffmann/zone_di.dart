@@ -94,7 +94,7 @@ R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
   runZoned(() {
     injector.zone = Zone.current;
     // Cause [injector] to call all factories.
-    for (final token in factories.keys) injector.get(token);
+    factories.keys.forEach(injector.get);
   }, zoneValues: {Injector: injector});
 
   return provide(injector.values, f);
