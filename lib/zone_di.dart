@@ -1,1 +1,10 @@
-export 'src/zone_di.dart' show provide, provideSingle, inject, Token;
+export 'src/zone_di.dart'
+    show
+        Token,
+        ValueFactory,
+        provide,
+        provideSingle,
+        provideFactories,
+        inject,
+        MissingDependencyException,
+        CircularDependencyException;
