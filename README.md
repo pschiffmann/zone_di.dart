@@ -33,4 +33,4 @@ There's also `provideFactories()` that constructs token values from the given fa
 
 To make `provide()` arguments available in `inject()`, this package uses [zones](https://api.dartlang.org/stable/dart-async/Zone-class.html).
 That means it can avoid global mutable state and the edge cases that typically come with it.
-For a longer explanation, I wrote a blog post about it [here]().
+For a longer explanation, I wrote a blog post about it [here](https://medium.com/@philippschiffmann/dependency-injection-in-dart-using-zones-45d6028eb1da).
