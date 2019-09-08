@@ -18,7 +18,8 @@ enum Sentinel {
 /// `package_name.library_name.variableName` are recommended.
 ///
 /// If a token is created with a default value, it will be returned by [inject]
-/// when no value was provided for this token. `null` is a valid default value.
+/// when no value was provided for this token. `null` is a valid default value
+/// and distinct from no value.
 ///
 /// The type argument [T] is used to infer the return type of [inject].
 @sealed
@@ -102,6 +103,8 @@ R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
 
 /// Returns the value provided for [token], or the tokens default value if no
 /// value was provided.
+///
+/// May throw [MissingDependencyException] or [CircularDependencyException].
 T inject<T>(Token<T> token) =>
     ((Zone.current[Injector] as Injector) ?? const Injector.empty()).get(token);
 
