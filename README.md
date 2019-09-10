@@ -127,14 +127,40 @@ I hope it can be of use to you regardless.
 
 Here are a few tips in no particular order.
 
-If you're already using a framework that ships with a dependency injection mechanism, that one is probably better optimized for your use case than this package.
-For example, Angular has its own [DI system](https://angulardart.dev/guide/hierarchical-dependency-injection), and Flutter has [inherited widgets](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html).
+---
+
+If you're already using a framework that ships with a dependency injection mechanism, that one is probably better optimized for your use case.
+In particular, Angular has its own [annotation-based DI system](https://angulardart.dev/guide/hierarchical-dependency-injection), and Flutter has [inherited widgets](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html).
+Both support multiple concurrent, nested scopes likes this package; but scopes are tied to components/widgets rather than function calls, which is most likely what you want.
+
 Instead, consider using this package if you're writing command line applications, or pub packages that can be consumed on all platforms (Flutter, web, server).
+
+---
 
 You can use `inject()` not only inside of class constructors, but also in individual methods or even top-level functions outside of any class.
 
-For a function signature alone, other people can't see what your methods `inject()`.
+---
+
+The return value of the context function is passed through by `provide()`.
+You can use this to instantiate a single class or call a single function that `inject()`s values:
+
+```dart
+void main() {
+  final greeter =
+      provide({greetingToken: 'Hello', emphasisToken: 1}, () => Greeter());
+
+  greeter.greet('world'); // `greeter` can now be used outside of the context
+                          // function.
+}
+```
+
+---
+
+Other people can't see what your classes and functions `inject()`.
 Make sure to explicitly list all dependencies of your class or function in its doc comment!
+Remember to also include transitive dependencies – if your function instantiates a class with a dependency on `fooToken`, and your function doesn't provide a value for it, then your function should also list that token as its dependency.
+
+---
 
 If you use zone_di in your published pub packages and expose the injection to the package consumer, consider writing your own specialized `provide()` function like this:
 
