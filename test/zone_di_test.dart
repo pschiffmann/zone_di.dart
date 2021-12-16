@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:zone_di/zone_di.dart';
+import 'package:zone_di2/zone_di.dart';
 
 final throwsMissingDependencyException =
     throwsA(TypeMatcher<MissingDependencyException>());
@@ -163,7 +163,6 @@ void main() {
         expect(injectNullable(tokenA), isNull);
         expect(injectNullable(tokenC)!.a, isNull);
         expect(() => inject(tokenA), throwsMissingDependencyException);
-        final c = inject(tokenC).a;
         expect(inject(tokenC).a, isNull);
       });
     });

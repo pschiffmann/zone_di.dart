@@ -4,7 +4,7 @@
 /// Class names borrowed from [Aqueduct](https://aqueduct.io).
 library zone_di.example;
 
-import 'package:zone_di/zone_di.dart';
+import 'package:zone_di2/zone_di.dart';
 
 //
 // Persistence layer interface

@@ -2,6 +2,11 @@
 
 An inversion of control package with a functional API that works without code generation, mirrors or passing around Injector objects.
 
+Note: this package is a place holder until zone_di is updated with nnbd.
+
+Author: Philipp Schiffmann <philippschiffmann93@gmail.com>
+
+
 ## API overview
 
 The three main exports of this package are `Token`, `provide()` and `inject()`.
