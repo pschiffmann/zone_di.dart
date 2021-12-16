@@ -105,8 +105,20 @@ R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
 /// value was provided.
 ///
 /// May throw [MissingDependencyException] or [CircularDependencyException].
-T? inject<T>(Token<T> token) =>
-    ((Zone.current[Injector] as Injector?) ?? const Injector.empty()).get(token);
+T inject<T>(Token<T> token) {
+  final injector =
+      ((Zone.current[Injector] as Injector?) ?? const Injector.empty());
+  final value = injector.get(token);
+
+  if (value == null) {
+    throw MissingDependencyException(token);
+  }
+  return value;
+}
+
+T? injectNullable<T>(Token<T> token) =>
+    ((Zone.current[Injector] as Injector?) ?? const Injector.empty())
+        .get(token);
 
 /// Implements the token store and lookup mechanism. The Injector [Type] is used
 /// as the key into a [Zone] to store the injector instance for that zone.

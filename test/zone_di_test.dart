@@ -33,7 +33,7 @@ class B {
 }
 
 class C {
-  C() : a = inject(tokenA);
+  C() : a = injectNullable(tokenA);
   final A? a;
 }
 
@@ -75,7 +75,9 @@ void main() {
 
     test('with not-provided token uses default value if available', () {
       expect(inject(tokenStrWithDefault), 'StrWithDefault default value');
-      expect(inject(tokenNullStrWithDefault), isNull);
+      expect(injectNullable(tokenNullStrWithDefault), isNull);
+      expect(() => inject(tokenNullStrWithDefault),
+          throwsMissingDependencyException);
     });
 
     test('prefers provided to default value', () {
@@ -86,7 +88,9 @@ void main() {
       });
 
       provideSingle(tokenStrWithDefault, null, () {
-        expect(inject(tokenStrWithDefault), isNull);
+        expect(injectNullable(tokenStrWithDefault), isNull);
+        expect(() => inject(tokenStrWithDefault),
+            throwsMissingDependencyException);
       });
     });
 
@@ -117,8 +121,8 @@ void main() {
       provideSingle(tokenA, outerA, () {
         provideFactories({tokenB: factoryB, tokenC: factoryC}, () {
           final a = inject(tokenA);
-          final b = inject(tokenB)!;
-          final c = inject(tokenC)!;
+          final b = inject(tokenB);
+          final c = inject(tokenC);
 
           expect(a, outerA);
           expect(b.a, innerA);
@@ -156,8 +160,11 @@ void main() {
 
     test('handles null values', () {
       provideFactories({tokenA: () => null, tokenC: () => C()}, () {
-        expect(inject(tokenA), isNull);
-        expect(inject(tokenC)!.a, isNull);
+        expect(injectNullable(tokenA), isNull);
+        expect(injectNullable(tokenC)!.a, isNull);
+        expect(() => inject(tokenA), throwsMissingDependencyException);
+        final c = inject(tokenC).a;
+        expect(inject(tokenC).a, isNull);
       });
     });
   });
