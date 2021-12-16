@@ -30,7 +30,7 @@ class DatabaseConfiguration {
 
 class PostgreSQLPersistentStore implements PersistentStore {
   PostgreSQLPersistentStore() {
-    final credentials = inject(databaseCredentialsToken);
+    final credentials = inject(databaseCredentialsToken)!;
     connect(credentials.username, credentials.password);
   }
 
@@ -44,7 +44,7 @@ class PostgreSQLPersistentStore implements PersistentStore {
 class App {
   App() : persistentStore = inject(persistentStoreToken);
 
-  final PersistentStore persistentStore;
+  final PersistentStore? persistentStore;
 
   void run() {/* ... */}
 }

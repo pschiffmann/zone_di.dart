@@ -9,7 +9,7 @@ final tokenS2 = Token<String>('S2');
 final tokenStrWithDefault =
     Token.withDefault('StrWithDefault', 'StrWithDefault default value');
 final tokenNullStrWithDefault =
-    Token<String>.withDefault('NullStrWithDefault', null);
+    Token<String?>.withDefault('NullStrWithDefault', null);
 
 final tokenA = Token<A>('A');
 final tokenB = Token<B>('B');
@@ -28,37 +28,37 @@ class B {
   B()
       : a = inject(tokenA),
         c = inject(tokenC);
-  final A a;
-  final C c;
+  final A? a;
+  final C? c;
 }
 
 class C {
   C() : a = inject(tokenA);
-  final A a;
+  final A? a;
 }
 
 class D {
   D() : e = inject(tokenE);
 
-  final E e;
+  final E? e;
 }
 
 class E {
   E() : f = inject(tokenF);
-  final F f;
+  final F? f;
 }
 
 class F {
   F()
       : c = inject(tokenC),
         g = inject(tokenG);
-  final C c;
-  final G g;
+  final C? c;
+  final G? g;
 }
 
 class G {
   G() : e = inject(tokenE);
-  final E e;
+  final E? e;
 }
 
 void main() {
@@ -102,7 +102,7 @@ void main() {
   group('provide()', () {
     test('throws a CastError if token/value types are not compatible', () {
       expect(() => provide({tokenS1: 1}, () {}),
-          throwsA(TypeMatcher<CastError>()));
+          throwsA(TypeMatcher<TypeError>()));
     });
   });
 
@@ -117,8 +117,8 @@ void main() {
       provideSingle(tokenA, outerA, () {
         provideFactories({tokenB: factoryB, tokenC: factoryC}, () {
           final a = inject(tokenA);
-          final b = inject(tokenB);
-          final c = inject(tokenC);
+          final b = inject(tokenB)!;
+          final c = inject(tokenC)!;
 
           expect(a, outerA);
           expect(b.a, innerA);
@@ -157,7 +157,7 @@ void main() {
     test('handles null values', () {
       provideFactories({tokenA: () => null, tokenC: () => C()}, () {
         expect(inject(tokenA), isNull);
-        expect(inject(tokenC).a, isNull);
+        expect(inject(tokenC)!.a, isNull);
       });
     });
   });

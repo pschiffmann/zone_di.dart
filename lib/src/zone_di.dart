@@ -29,19 +29,19 @@ class Token<T> {
       : _defaultValue = defaultValue;
 
   final String _debugName;
-  final Object _defaultValue;
+  final Object? _defaultValue;
 
-  T _cast(dynamic v) => v as T;
+  T? _cast(dynamic v) => v as T?;
 
   @override
   String toString() => 'Token($_debugName)';
 }
 
-typedef ValueFactory<T> = T Function();
+typedef ValueFactory<T> = T? Function();
 
 /// Associates the tokens in [values] with the provided values inside of [f].
 ///
-/// Throws a [CastError] if [values] contains a (`Token<T>`, value) pair where
+/// Throws a [TypeError] if [values] contains a (`Token<T>`, value) pair where
 /// value is not assignable to `T`. It is possible to provide `null` for a
 /// token.
 R provide<R>(Map<Token, dynamic> values, R Function() f) =>
@@ -86,7 +86,7 @@ R provideSingle<T, R>(Token<T> token, T value, R Function() f) =>
 /// }, () {});
 /// ```
 ///
-/// Each factory is called at most once. Throws a [CastError] if a factory
+/// Each factory is called at most once. Throws a [TypeError] if a factory
 /// returns an object that doesn't match its token type. Throws a
 /// [CircularDependencyException] if two factories try to mutually [inject] each
 /// others tokens.
@@ -105,8 +105,8 @@ R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
 /// value was provided.
 ///
 /// May throw [MissingDependencyException] or [CircularDependencyException].
-T inject<T>(Token<T> token) =>
-    ((Zone.current[Injector] as Injector) ?? const Injector.empty()).get(token);
+T? inject<T>(Token<T> token) =>
+    ((Zone.current[Injector] as Injector?) ?? const Injector.empty()).get(token);
 
 /// Implements the token store and lookup mechanism. The Injector [Type] is used
 /// as the key into a [Zone] to store the injector instance for that zone.
@@ -116,14 +116,14 @@ class Injector {
       : values = const {},
         parent = null;
 
-  final Map<Token, Object> values;
-  final Injector parent;
+  final Map<Token, Object?> values;
+  final Injector? parent;
 
-  T get<T>(Token<T> token) {
+  T? get<T>(Token<T> token) {
     if (values.containsKey(token)) return token._cast(values[token]);
-    if (parent != null) return parent.get(token);
+    if (parent != null) return parent!.get(token);
     if (token._defaultValue != Sentinel.noValue) {
-      return token._defaultValue;
+      return token._defaultValue as T?;
     }
     throw MissingDependencyException(token);
   }
@@ -137,16 +137,17 @@ class FactoryInjector extends Injector {
 
   /// All tokens from [factories] for which the factory function has been called
   /// and not yet returned. Iteration order represents call order.
+  // ignore: prefer_collection_literals
   final underConstruction = LinkedHashSet<Token>();
 
   /// The zone that contains this injector (`zone[Injector] == this`).
   ///
   /// [factories] are run in this zone, so [provide] calls in factory functions
   /// can't shadow tokens from [factories].
-  Zone zone;
+  late Zone zone;
 
   @override
-  T get<T>(Token<T> token) {
+  T? get<T>(Token<T> token) {
     if (!factories.containsKey(token)) return super.get(token);
     if (!values.containsKey(token)) {
       final underConstructionAlready = !underConstruction.add(token);
@@ -154,11 +155,11 @@ class FactoryInjector extends Injector {
         throw CircularDependencyException(
             List.unmodifiable(underConstruction.skipWhile((t) => t != token)));
       }
-      values[token] = token._cast(zone.run(factories[token]));
+      values[token] = token._cast(zone.run(factories[token]!));
       assert(underConstruction.last == token);
       underConstruction.remove(token);
     }
-    return values[token];
+    return values[token] as T?;
   }
 }
 
