@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:zone_di2/zone_di.dart';
+import 'package:zone_di2/zone_di2.dart';
 
 final throwsMissingDependencyException =
     throwsA(TypeMatcher<MissingDependencyException>());
