@@ -6,6 +6,5 @@ export 'src/zone_di.dart'
         provideSingle,
         provideFactories,
         inject,
-        injectNullable,
         MissingDependencyException,
         CircularDependencyException;

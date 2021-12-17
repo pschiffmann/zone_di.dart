@@ -31,7 +31,7 @@ class Token<T> {
   final String _debugName;
   final Object? _defaultValue;
 
-  T? _cast(dynamic v) => v as T?;
+  T _cast(dynamic v) => v as T;
 
   @override
   String toString() => 'Token($_debugName)';
@@ -110,15 +110,34 @@ T inject<T>(Token<T> token) {
       ((Zone.current[Injector] as Injector?) ?? const Injector.empty());
   final value = injector.get(token);
 
-  if (value == null) {
+  if (value == null && !isNullable<T>()) {
     throw MissingDependencyException(token);
   }
   return value;
 }
 
-T? injectNullable<T>(Token<T> token) =>
-    ((Zone.current[Injector] as Injector?) ?? const Injector.empty())
-        .get(token);
+/// Returns true if [T] was declared as a nullable type (e.g. String?)
+bool isNullable<T>() => null is T;
+
+/// Returns true if [token] is contained within the current scope
+bool hasToken<T>(Token<T> token) {
+  var _hasToken = true;
+  final injector =
+      ((Zone.current[Injector] as Injector?) ?? const Injector.empty());
+  try {
+    final value = injector.get(token);
+    if (isNullable<T>() && value == null) {
+      _hasToken = false;
+    }
+  } on MissingDependencyException catch (_) {
+    _hasToken = false;
+  }
+  return _hasToken;
+}
+
+// T? injectNullable<T>(Token<T> token) =>
+//     ((Zone.current[Injector] as Injector?) ?? const Injector.empty())
+//         .get(token);
 
 /// Implements the token store and lookup mechanism. The Injector [Type] is used
 /// as the key into a [Zone] to store the injector instance for that zone.
@@ -131,11 +150,11 @@ class Injector {
   final Map<Token, Object?> values;
   final Injector? parent;
 
-  T? get<T>(Token<T> token) {
+  T get<T>(Token<T> token) {
     if (values.containsKey(token)) return token._cast(values[token]);
     if (parent != null) return parent!.get(token);
     if (token._defaultValue != Sentinel.noValue) {
-      return token._defaultValue as T?;
+      return token._defaultValue as T;
     }
     throw MissingDependencyException(token);
   }
@@ -159,7 +178,7 @@ class FactoryInjector extends Injector {
   late Zone zone;
 
   @override
-  T? get<T>(Token<T> token) {
+  T get<T>(Token<T> token) {
     if (!factories.containsKey(token)) return super.get(token);
     if (!values.containsKey(token)) {
       final underConstructionAlready = !underConstruction.add(token);
@@ -171,7 +190,7 @@ class FactoryInjector extends Injector {
       assert(underConstruction.last == token);
       underConstruction.remove(token);
     }
-    return values[token] as T?;
+    return values[token] as T;
   }
 }
 

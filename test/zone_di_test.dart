@@ -12,12 +12,14 @@ final tokenNullStrWithDefault =
     Token<String?>.withDefault('NullStrWithDefault', null);
 
 final tokenA = Token<A>('A');
+final tokenANull = Token<A?>('A?');
 final tokenB = Token<B>('B');
 final tokenC = Token<C>('C');
 final tokenD = Token<D>('D');
 final tokenE = Token<E>('E');
 final tokenF = Token<F>('F');
 final tokenG = Token<G>('G');
+final tokenGNull = Token<G?>('G?');
 
 class A {
   A(this.value);
@@ -33,7 +35,7 @@ class B {
 }
 
 class C {
-  C() : a = injectNullable(tokenA);
+  C() : a = inject(tokenA);
   final A? a;
 }
 
@@ -61,6 +63,11 @@ class G {
   final E? e;
 }
 
+class H {
+  H() : g = inject(tokenGNull);
+  final G? g;
+}
+
 void main() {
   group('inject()', () {
     test('outside of provide() fails', () {
@@ -75,9 +82,8 @@ void main() {
 
     test('with not-provided token uses default value if available', () {
       expect(inject(tokenStrWithDefault), 'StrWithDefault default value');
-      expect(injectNullable(tokenNullStrWithDefault), isNull);
-      expect(() => inject(tokenNullStrWithDefault),
-          throwsMissingDependencyException);
+      expect(inject(tokenNullStrWithDefault), isNull);
+      expect(inject(tokenNullStrWithDefault), isNull);
     });
 
     test('prefers provided to default value', () {
@@ -88,7 +94,7 @@ void main() {
       });
 
       provideSingle(tokenStrWithDefault, null, () {
-        expect(injectNullable(tokenStrWithDefault), isNull);
+        expect(inject(tokenStrWithDefault), isNull);
         expect(() => inject(tokenStrWithDefault),
             throwsMissingDependencyException);
       });
@@ -159,10 +165,8 @@ void main() {
     });
 
     test('handles null values', () {
-      provideFactories({tokenA: () => null, tokenC: () => C()}, () {
-        expect(injectNullable(tokenA), isNull);
-        expect(injectNullable(tokenC)!.a, isNull);
-        expect(() => inject(tokenA), throwsMissingDependencyException);
+      provideFactories({tokenANull: () => null, tokenC: () => C()}, () {
+        expect(inject(tokenANull), isNull);
         expect(inject(tokenC).a, isNull);
       });
     });
