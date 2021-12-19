@@ -1,8 +1,11 @@
-# zone_di
+# Scope
 
-An inversion of control package with a functional API that works without code generation, mirrors or passing around Injector objects.
+Scope provides dependency injection for Dart applications
+allowing you to inject values into a scope and then access from any method called within that scope.
 
-Note: this package is a place holder until zone_di is updated with nnbd.
+Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides di for your call stack.
+
+For Java developers Scope provides similar functionality to a thread local varia
 
 Author: Philipp Schiffmann <philippschiffmann93@gmail.com>
 
