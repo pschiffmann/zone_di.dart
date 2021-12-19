@@ -1,10 +1,18 @@
-# zone_di
+# Scope
 
-An inversion of control package with a functional API that works without code generation, mirrors or passing around Injector objects.
+Scope provides dependency injection (DI) for Dart applications
+allowing you to inject values into a scope and then 'use' those dependencies from any method (or constructor) called within that scope.
 
-Note: this package is a place holder until zone_di is updated with nnbd.
+Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides DI for your call stack.
 
-Author: Philipp Schiffmann <philippschiffmann93@gmail.com>
+For Java developers Scope provides similar functionality to a thread local variables
+
+Authors: Philipp Schiffmann <philippschiffmann93@gmail.com>
+     S. Brett Sutton
+
+Scope is a reimagining of Philipp's zone_id package.
+All credit goes to Phillipp's original implementation without which Scope wouldn't exist.
+
 
 
 To ensure type safety when providing values we recommend that you add the following to your analysis_options.yaml file:
@@ -23,23 +31,50 @@ analyzer:
 ```
 
 ## API overview
+The Scope API uses a builder pattern allowing you to register any number of strictly typed values.
 
-The three main exports of this package are `ScopeKey`, `provide()` and `inject()`.
-Use keys to declare dependencies that can be injected.
+You can then 'use' the registered values from any method called from within the Scope.
+
+The registered values are essentially stored in a map and are retrieved using a globally defined key.
+
 
 ```dart
-final greetingScopeKey = ScopeKey<String>('my_package.greeting');
-final emphasisScopeKey = ScopeKey<int>('my_package.emphasis');
+Scope()
+    ..value<int>(ageKey, 18)
+    ..value<String>(nameKey, 'brett')
+    ..run(() {
+        var age = use(ageKey);
+        var name = use(nameKey);
+    });
+```
+In the above example we register two values:
+* an int with a key 'ageKey' and a value 18.
+* a String with a key 'nameKey' and a value of 'brett'.
+
+The age and name values are then retrieved using the `use` method and the ScopeKey they where stored with.
+
+
+## ScopeKey
+To store and use a value you must create a typed key for each value using a ScopeKey:
+
+```dart
+final ageKey = ScopeKey<int>();
+final nameKey = ScopeKey<String>();
+final monthKey = ScopeKey<String>();
 ```
 
-Unlike many other dependency injection frameworks, this package doesn't expose a _Container_ or _Injector_ class from which dependencies could be obtained.
-Instead, the current value of a key can be looked up with a call to the top-level function `inject()`.
+As the ScopeKey is typed the values returned from the `use` call are also correctly typed.
 
+Keys are declared globally and it's is standard practice to place you Keys in a separate dart library as they need to be available at both the registration site and the use site.
+
+# Example
+
+We start by creating a client that will 'use' values registered into the Scope.
 ```dart
 class Greeter {
   Greeter()
-      : greeting = inject(greetingScopeKey),
-        emphasis = inject(emphasisScopeKey);
+      : greeting = use(greetingToken),
+        emphasis = use(emphasisToken);
 
   final String greeting;
   final int emphasis;
@@ -50,48 +85,78 @@ class Greeter {
 }
 ```
 
-Values are made available for injection by passing them to the top-level function `provide()`, together with a context callback function.
-The function will be called immediately, and the (key, value) associations exist only inside of the context of this call tree.
+Values are made available for registering them with a `Scope`.
+The function will be called immediately, and the (token, value) associations exist only inside of the context of this call tree.
 
 ```dart
 void main() {
-  provide({
-    greetingScopeKey: 'Hello',
-    emphasisScopeKey: 1,
-  }, () {
+  Scope()
+    ..value<String>(greetingToken, 'Hello')
+    ..value<int>(emphasisToken, 1)
+    ..run(() {
+    // The greet method calls `use` to retrieve the registered values
     Greeter().greet('world'); // 'Hello, world!'
   });
 
-  Greeter().greet('you'); // throws: `MissingDependencyException`, because the
-                          // `inject()` call inside of the `Greeter` constructor
-                          // was made outside of a `provide()` context.
-                          // The previously provided values don't leak out from
-                          // their context.
+  Greeter().greet('you'); // throws: `MissingDependencyException`, because 
+                          // `use()` is called outside the `Scope.run` method.
+                          // The previously registered values arn't available
+                          // outside of the scope.
 }
 ```
 
-Different values can be provided to different parts of the program for the same key.
-`provide()` contexts can be nested, and inner values shadow outer ones for the same key.
-In this way, key lookup works analogous to name lookup in functions (local variable shadows function parameter, shadows class property, shadows global variable), except that it works across the boundaries of the current function.
+# use
+To obtain a registered value we can call either of the two forms of `use`.
+The two forms are equivalent and exist simply for convenience.
+
+```dart
+     var age = use(ageKey);
+     var name = Scope.use(ageKey);
+```
+
+The first version is consice whilst the second version provides better documentation.
+
+ScopeKeys are typed as the result of `use` is also typed.
+
+
+# Nesting
+
+Scopes can also be nested with the same key used at each level.
+
+When you `use` a key within a nested Scoped the value from the closest scope is returned.
+
+If the key isn't in the immediate Scope we search up thorough parent scopes.
 
 ```dart
 void main() {
-  provide({
-    greetingScopeKey: 'Hello',
-    emphasisScopeKey: 1,
-  }, () {
-    provide({greetingScopeKey: 'Good day'}, () {
-      Greeter().greet('Philipp'); // 'Good day, Philipp!'
-    });
 
-    provide({emphasisScopeKey: 3}, () {
-      Greeter().greet('Paul'); // 'Hello, Paul!!!'
-    });
+  // parent scope
+  Scope()
+    ..value<String>(greetingToken, 'Hello')
+    ..value<int>(emphasisToken,  1)
+     ..run(() {
+    
+          /// Nest child Scope
+          Scope()
+          ..value<String>(greetingToken, 'Good day')
+          ..run(() {
+               Greeter().greet('Philipp'); // 'Good day, Philipp!'
+          });
+
+         /// Also nested witin the parent scope
+         Scope()
+          ..value<int>(emphasisToken, 3)
+          ..run(() {
+               Greeter().greet('Paul'); // 'Hello, Paul!!!'
+         });
   });
 }
 ```
 
-Notice that this even works for asynchronous code – multiple `provide()` contexts can be executed concurrently without values leaking from one context into the other.
+
+# Async calls
+
+Scopes also work across asynchronous calls – multiple scopes can be executed concurrently without values leaking from one context into the other.
 
 ```dart
 Future delay1Sec() => Future.delayed(Duration(seconds: 1));
@@ -104,44 +169,85 @@ Future delay1Sec() => Future.delayed(Duration(seconds: 1));
 ///     Goodbye, Bob!
 ///     Hello, John!
 ///     Goodbye, John!
-void main() {
-  provide({emphasisScopeKey: 1}, () {
-    final names = ['Alice', 'Bob', 'John'];
+Future<void> main() async {
+  await Scope()
+     ..value<int>(emphasisToken, 1)
+     .run(() async {
+          final names = ['Alice', 'Bob', 'John'];
 
-    provide({greetingScopeKey: 'Hello'}, () async {
-      final greeter = Greeter();
-      for (final name in names) {
-        greeter.greet(name);
-        await delay1Sec();
-      }
-    });
+         await Scope()
+         ..value<String>(greetingToken, 'Hello')
+         .run(() async {
+           final greeter = Greeter();
+           for (final name in names) {
+             greeter.greet(name);
+             await delay1Sec();
+           }
+         });
 
-    provide({greetingScopeKey: 'Goodbye'}, () async {
-      final greeter = Greeter();
-      await Future.delayed(Duration(milliseconds: 500));
-      for (final name in names) {
-        greeter.greet(name);
-        await delay1Sec();
-      }
-    });
-  });
+         await Scope()
+          ..value<String>(greetingToken, 'Goodbye')
+          .run(() async {
+                final greeter = Greeter();
+                await Future.delayed(Duration(milliseconds: 500));
+                for (final name in names) {
+                  greeter.greet(name);
+                  await delay1Sec();
+                }
+         });
+     });
 }
 ```
 
-Finally, there's also `provideFactories()` that constructs key values from the given factory functions and handles dependencies between the factories.
-For more details on that and the other functions, see the [API docs](https://pub.dev/documentation/zone_di/latest/).
+# Factories and Generators
+
+Scope allows you to define values based on factory or generator methods.
+
+## factory
+A factory value is simply a value that is provided by making a call to a function rather than providing a fixed value.
+
+```dart
+Scope()
+..value<String>(nameKey, 'brett')
+..value<DateTime>(dobKey, DateTime(year: 2000, month: 1, day 1)
+..factory<String>(ageKey, () => DateTime.now().difference(use(dobKey)).inYears) // called only once.
+..run(() {
+     print('age: ${use(ageKey)}');
+ });
+ ```
+ 
+ The factory value is calculated once by calling the method passed to the `factory` method.
+ The factory method is called when the `run` method is called.  The calcualated factory value is then fixed for the life of the Scope.
+ 
+ You can think of this as eager evaluation of the factory value.
+ 
+ ## generator
+  
+ A generator value is registered in a similar way to the factory value. The difference is that the generator method is called each time the `use` method is called for the generators ScopeKey.
+ 
+ 
+```dart
+Scope()
+..value<String>(nameKey, 'brett')
+..value<DateTime>(dobKey, DateTime(year: 2000, month: 1, day 1)
+..generator<String>(ageKey, () => DateTime.now().difference(use(dobKey)).inYears) // called each time `use(ageKey)` is called within this Scope.
+..run(() {
+     print('age: ${use(ageKey)}');
+ });
+ ```
+ 
+ A generator value is reclaculated each time the `use` method is called for the registed ScopeKey and it is not calculated until the `use` method is called.
+ 
+ You can think of this as lazy evalutation of the generator value.
+ 
+ A generator can be used to recalcuate a value each time it is used and could be used to provide a sequence of values (such as a counter or a random number generator).
+
 
 ## How it works
 
-To make `provide()` arguments available in `inject()`, this package uses [zones](https://api.dartlang.org/stable/dart-async/Zone-class.html).
+To make values registered to the Scope available to `use()` calls, this package uses [zones](https://api.dartlang.org/stable/dart-async/Zone-class.html).
 That means it can avoid global mutable state and the edge cases that typically come with it.
-For a longer explanation, I wrote a blog post about it [here](https://medium.com/@philippschiffmann/dependency-injection-in-dart-using-zones-45d6028eb1da).
 
-## A note on naming
-
-Since writing this package I have learned that the name "dependency injection" explicitly refers to the approach to use a _Container_ for managing objects, and that the dependencies of a class should be visible from its public API, mainly its constructor parameters or public setters.
-Since this API doesn't follow these conventions, the _di_ in the package name is a misnomer, and I'm sorry if I've lured you onto this README with false promises.
-I hope it can be of use to you regardless.
 
 ## How to use this package / best practices
 
@@ -149,25 +255,30 @@ Here are a few tips in no particular order.
 
 ---
 
-If you're already using a framework that ships with a dependency injection mechanism, that one is probably better optimized for your use case.
-In particular, Angular has its own [annotation-based DI system](https://angulardart.dev/guide/hierarchical-dependency-injection), and Flutter has [inherited widgets](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html).
-Both support multiple concurrent, nested scopes likes this package; but scopes are tied to components/widgets rather than function calls, which is most likely what you want.
+Scope is not a substitue for the likes of Provider which works to provide values for your Flutter BuildContext. The Flutter build method isn't called on your stack (as its called by the Flutter framework) and Scope only works for methods calls nested within the Scope's run method.
 
-Instead, consider using this package if you're writing command line applications, or pub packages that can be consumed on all platforms (Flutter, web, server).
+Scope is intended for use cases where you create some resource at the top level and then need access to that resource way down in your call hierachy and you don't want to have to pass the value all the way down.
 
----
-
-You can use `inject()` not only inside of class constructors, but also in individual methods or even top-level functions outside of any class.
+Consider using this package if you're writing command line applications, or pub packages that can be consumed on all platforms (Flutter, web, server).
 
 ---
 
-The return value of the context function is passed through by `provide()`.
+You can call `use()` inside class constructors, in individual methods or even top-level functions outside of any class.
+
+The only criteria is that when you call 'use' a Scope can be found in some parent method/function somewhere on the call stack.
+
+---
+
+The return value of the run action is passed through by `provide()`.
 You can use this to instantiate a single class or call a single function that `inject()`s values:
 
 ```dart
 void main() {
   final greeter =
-      provide({greetingScopeKey: 'Hello', emphasisScopeKey: 1}, () => Greeter());
+      Scope()
+          ..value<String>(greetingToken, 'Hello')
+          ..value<int>(emphasisToken,  1)
+          .run<Greeter>(Greeter());
 
   greeter.greet('world'); // `greeter` can now be used outside of the context
                           // function.
@@ -176,28 +287,54 @@ void main() {
 
 ---
 
-Other people can't see what your classes and functions `inject()`.
+Other people can't see what your values you register in a Scope.
 Make sure to explicitly list all dependencies of your class or function in its doc comment!
 Remember to also include transitive dependencies – if your function instantiates a class with a dependency on `fooScopeKey`, and your function doesn't provide a value for it, then your function should also list that key as its dependency.
 
 ---
 
-If you use zone_di in your published pub packages and expose the injection to the package consumer, consider writing your own specialized `provide()` function like this:
+If you use Scope in your published pub packages and expose the `use` to the package consumer, consider writing your own specialized `Scope()` and 'use' functions like this:
 
 ```dart
 import 'package:meta/meta.dart' show required;
-import 'package:zone_di/zone_di.dart' as zone_di;
+import 'package:scope/scope.dart' as scope;
 
-final fooScopeKey = ScopeKey<String>('my_package.foo');
-final barScopeKey = ScopeKey<int>('my_package.bar');
+final dbKey = ScopeKey<Db>();
 
-void provide(void Function() f, {@required String foo, int bar}) {
-  zone_di.provide({fooScopeKey: foo, barScopeKey: bar}, f);
+// provide a transacition class that acquires a db cnnection
+class Transaction
+{
+     void run(void Function() action)
+     {
+          var db = DbPool.acquire();
+          Scope()
+             ..value(dbKey, db)
+             ..run(action);
+             
+           DbPool.release(db);
+     }
+    
+     /// To access the db inscope for this transaction
+     static DB db() => use(dbKey);
 }
+
+
+/// 
+void main() 
+{
+     
+     Transaction().run() {
+          createUser();
+        });
+ }
+ 
+ void createUser() {
+       /// get the db this transaction is using.
+       var db = Transation.db();
+       db.insertUser();
+}
+
 ```
 
 This way, a consumer of your package doesn't have to look up what `ScopeKey`s are, and gets a type-safe list of all of your public dependencies at a glance.
 
-## Special thanks
-
-A big thank you goes to Paul Hammant for his insightful feedback and criticism.
