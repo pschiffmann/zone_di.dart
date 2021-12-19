@@ -222,6 +222,9 @@ Scope()
  You can think of this as eager evaluation of the factory value.
  
  ## generator
+ 
+ Note: generators are not yet implemented.  If you are looking to contribute this would be a great place to start.
+ https://github.com/noojee/scope/issues/3
   
 A generator value is registered in a similar way to the factory value. The difference is that the generator method is called each time the `use` method is called for the generator's ScopeKey.
 
