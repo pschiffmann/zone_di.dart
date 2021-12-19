@@ -5,9 +5,10 @@ allowing you to inject values into a scope and then access from any method calle
 
 Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides di for your call stack.
 
-For Java developers Scope provides similar functionality to a thread local varia
+For Java developers Scope provides similar functionality to a thread local variables
 
-Author: Philipp Schiffmann <philippschiffmann93@gmail.com>
+Authors: Philipp Schiffmann <philippschiffmann93@gmail.com>
+     S. Brett Sutton
 
 
 ## API overview
