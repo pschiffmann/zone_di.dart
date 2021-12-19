@@ -90,6 +90,20 @@ void main() {
 }
 ```
 
+# use
+To obtain a registered value we can call either of the two forms of `use`.
+The two forms are equivalent and exist simply for convenience.
+
+```dart
+     var age = use(ageKey);
+     var name = Scope.use(ageKey);
+```
+
+The first version is consice whilst the second version provides better documentation.
+
+ScopeKeys are typed as the result of `use` is also typed.
+
+
 # Nesting
 
 Scopes can also be nested with the same key used at each level.
@@ -123,6 +137,7 @@ void main() {
   });
 }
 ```
+
 
 # Async calls
 
