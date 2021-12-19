@@ -41,6 +41,31 @@ final nameKey = ScopeKey<String>();
 Keys are declared at globally and it's is
 standard practice to place you Keys in a separate dart library.
 
+Scopes can be nested with the same key 
+used at each level.
+
+When you use a key within a nested Scoped
+the value from the closest scope is returned.
+
+If the key isn't in the nearest Scope we search up thorough parent scopes.
+
+```dart
+  Scope()
+    ..value<int>(ageKey, 18)
+    ..value<String>(nameKey, 'brett')
+    ..run(() {
+      var age = use(ageKey);
+      var name = use(nameKey);
+      Scope()
+        ..value<int>(ageKey, 21)
+        ..run(() {
+          var age = use(ageKey);
+          var name = use(nameKey);
+    });
+```
+
+
+
 The three main exports of this package are `Token`, `provide()` and `inject()`.
 Use tokens to declare dependencies that can be injected.
 
