@@ -1,5 +1,11 @@
-include: package:pedantic/analysis_options.yaml
-linter:
-  rules:
-    - prefer_final_locals
-    - prefer_single_quotes
+include: package:lint_hard/all.yaml
+
+
+analyzer:
+  language:
+    strict-raw-types: true
+    strict-inference: true
+    # enable post 2.16
+    # strict-casts: true
+  strong-mode:
+    implicit-casts: false
