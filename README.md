@@ -223,9 +223,8 @@ Scope()
  
  ## generator
   
- A generator value is registered in a similar way to the factory value. The difference is that the generator method is called each time the `use` method is called for the generators ScopeKey.
- 
- 
+A generator value is registered in a similar way to the factory value. The difference is that the generator method is called each time the `use` method is called for the generator's ScopeKey.
+
 ```dart
 Scope()
 ..value<String>(nameKey, 'brett')
@@ -234,13 +233,14 @@ Scope()
 ..run(() {
      print('age: ${use(ageKey)}');
  });
- ```
- 
- A generator value is reclaculated each time the `use` method is called for the registed ScopeKey and it is not calculated until the `use` method is called.
- 
- You can think of this as lazy evalutation of the generator value.
- 
- A generator can be used to recalcuate a value each time it is used and could be used to provide a sequence of values (such as a counter or a random number generator).
+```
+In this example each time `use` is call the persons age is re-calculated from their birthdate until `now`.
+
+A generator value is recalculated each time the `use` method is called for the registered ScopeKey and it is not calculated until the `use` method is called.
+
+You can think of this as lazy evaluation of the generator value.
+
+A generator can be used to recalculate a value each time it is used and could be used to provide a sequence of values (such as a counter or a random number generator).
 
 
 ## How it works
