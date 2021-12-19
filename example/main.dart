@@ -10,8 +10,8 @@ import 'package:zone_di2/zone_di2.dart';
 // Persistence layer interface
 //
 
-final persistentStoreToken =
-    Token<PersistentStore>('zone_di.example.persistentStoreToken');
+final persistentStoreScopeKey =
+    ScopeKey<PersistentStore>('zone_di.example.persistentStoreScopeKey');
 
 abstract class PersistentStore {}
 
@@ -19,8 +19,8 @@ abstract class PersistentStore {}
 // Postgres implementation of persistence layer
 //
 
-final databaseCredentialsToken =
-    Token<DatabaseConfiguration>('zone_di.example.databaseCredentialsToken');
+final databaseCredentialsScopeKey = ScopeKey<DatabaseConfiguration>(
+    'zone_di.example.databaseCredentialsScopeKey');
 
 class DatabaseConfiguration {
   DatabaseConfiguration(this.username, this.password);
@@ -30,7 +30,7 @@ class DatabaseConfiguration {
 
 class PostgreSQLPersistentStore implements PersistentStore {
   PostgreSQLPersistentStore() {
-    final credentials = inject(databaseCredentialsToken);
+    final credentials = use(databaseCredentialsScopeKey);
     connect(credentials.username, credentials.password);
   }
 
@@ -42,20 +42,19 @@ class PostgreSQLPersistentStore implements PersistentStore {
 //
 
 class App {
-  App() : persistentStore = inject(persistentStoreToken);
+  App() : persistentStore = use(persistentStoreScopeKey);
 
   final PersistentStore? persistentStore;
 
   void run() {/* ... */}
 }
 
-void main() {
-  provideFactories({
-    persistentStoreToken: () => PostgreSQLPersistentStore(),
-    databaseCredentialsToken: () =>
-        DatabaseConfiguration('pschiffmann', 'dolphins')
-  }, () {
-    final app = App();
-    app.run();
-  });
-}
+// void main() {
+//   provideFactories({
+//     persistentStoreScopeKey: () => PostgreSQLPersistentStore(),
+//     databaseCredentialsScopeKey: () =>
+//         DatabaseConfiguration('pschiffmann', 'dolphins')
+//   }, () {
+//     App().run();
+//   });
+// }

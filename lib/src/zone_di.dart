@@ -1,31 +1,35 @@
+library zone;
+
 import 'dart:async';
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
 
+part 'scope.dart';
+
 enum Sentinel {
-  /// Used to indicate that a [Token] has no default value – which is different
-  /// from a default value of `null`.
+  /// Used to indicate that a [ScopeKey] has no default value – which is
+  /// different from a default value of `null`.
   noValue
 }
 
-/// The only purpose of tokens is to be unique so that they can be used to
-/// uniquely identify injected values. Tokens are opaque – you are not supposed
+/// The only purpose of keys is to be unique so that they can be used to
+/// uniquely identify injected values. ScopeKeys are opaque – you are not supposed
 /// to read any other information from them except their identity. You must not
 /// extend or implement this class.
 ///
 /// The `debugName` is only used in error messages. Strings with shape
 /// `package_name.library_name.variableName` are recommended.
 ///
-/// If a token is created with a default value, it will be returned by [inject]
-/// when no value was provided for this token. `null` is a valid default value
+/// If a key is created with a default value, it will be returned by [use]
+/// when no value was provided for this key. `null` is a valid default value
 /// and distinct from no value.
 ///
-/// The type argument [T] is used to infer the return type of [inject].
+/// The type argument [T] is used to infer the return type of [use].
 @sealed
-class Token<T> {
-  Token(this._debugName) : _defaultValue = Sentinel.noValue;
-  Token.withDefault(this._debugName, T defaultValue)
+class ScopeKey<T> {
+  ScopeKey(this._debugName) : _defaultValue = Sentinel.noValue;
+  ScopeKey.withDefault(this._debugName, T defaultValue)
       : _defaultValue = defaultValue;
 
   final String _debugName;
@@ -34,186 +38,148 @@ class Token<T> {
   T _cast(dynamic v) => v as T;
 
   @override
-  String toString() => 'Token($_debugName)';
+  String toString() => 'ScopeKey($_debugName)';
 }
 
 typedef ValueFactory<T> = T? Function();
 
-/// Associates the tokens in [values] with the provided values inside of [f].
-///
-/// Throws a [TypeError] if [values] contains a (`Token<T>`, value) pair where
-/// value is not assignable to `T`. It is possible to provide `null` for a
-/// token.
-R provide<R>(Map<Token, dynamic> values, R Function() f) =>
-    runZoned(f, zoneValues: {
-      Injector: Injector(values.map((t, v) => MapEntry(t, t._cast(v)))),
-    });
-
-/// Alias of `provide({token: value}, f)`.
-R provideSingle<T, R>(Token<T> token, T value, R Function() f) =>
-    runZoned(f, zoneValues: {
-      Injector: Injector({token: value})
-    });
-
-/// Eagerly calls [factories], then provides the results to [f]. Factory
-/// functions may [inject] other values from [factories].
-///
-/// ```dart
-/// provideFactories({
-///   tokenA: () => 'hello',
-///   tokenB: () => 'world',
-///   tokenAB: () => inject(tokenA) + ' ' + inject(tokenB)
-/// }, () {
-///   assert(inject(tokenAB) == 'hello world');
-/// });
-/// ```
-///
-/// Note that factories can't [inject] tokens provided in another factory
-/// function:
-///
-/// ```dart
-/// provideFactories({
-///   tokenX: () => provideSingle(
-///         tokenY,
-///         42,
-///         () => inject(tokenZ) - 1,
-///       ),
-///   tokenZ: () {
-///     // Will throw [MissingDependencyException] even though a value for
-///     // `tokenY` was provided in `tokenX` factory.
-///     return inject(tokenY) * 4;
-///   }
-/// }, () {});
-/// ```
-///
-/// Each factory is called at most once. Throws a [TypeError] if a factory
-/// returns an object that doesn't match its token type. Throws a
-/// [CircularDependencyException] if two factories try to mutually [inject] each
-/// others tokens.
-R provideFactories<R>(Map<Token, ValueFactory> factories, R Function() f) {
-  final injector = FactoryInjector(factories);
-  runZoned(() {
-    injector.zone = Zone.current;
-    // Cause [injector] to call all factories.
-    factories.keys.forEach(injector.get);
-  }, zoneValues: {Injector: injector});
-
-  return provide(injector.values, f);
-}
-
-/// Returns the value provided for [token], or the tokens default value if no
+/// Returns the value provided for [key], or the keys default value if no
 /// value was provided.
 ///
 /// May throw [MissingDependencyException] or [CircularDependencyException].
-T inject<T>(Token<T> token) {
-  final injector =
-      ((Zone.current[Injector] as Injector?) ?? const Injector.empty());
-  final value = injector.get(token);
+T use<T>(ScopeKey<T> key) => _use(key);
 
-  if (value == null && !isNullable<T>()) {
-    throw MissingDependencyException(token);
-  }
+/// Returns the value provided for [key], or the keys default value if no
+/// value was provided.
+///
+/// May throw [MissingDependencyException] or [CircularDependencyException].
+T _use<T>(ScopeKey<T> key) {
+  final injector =
+      (Zone.current[Injector] as Injector?) ?? const Injector.empty();
+  final value = injector.get(key);
+
   return value;
 }
 
 /// Returns true if [T] was declared as a nullable type (e.g. String?)
 bool isNullable<T>() => null is T;
 
-/// Returns true if [token] is contained within the current scope
-bool hasToken<T>(Token<T> token) {
-  var _hasToken = true;
+/// Returns true if [key] is contained within the current scope
+bool hasScopeKey<T>(ScopeKey<T> key) {
+  var _hasScopeKey = true;
   final injector =
-      ((Zone.current[Injector] as Injector?) ?? const Injector.empty());
+      (Zone.current[Injector] as Injector?) ?? const Injector.empty();
   try {
-    final value = injector.get(token);
+    final value = injector.get(key);
     if (isNullable<T>() && value == null) {
-      _hasToken = false;
+      _hasScopeKey = false;
     }
-  } on MissingDependencyException catch (_) {
-    _hasToken = false;
+  } on MissingDependencyException<T> catch (_) {
+    _hasScopeKey = false;
   }
-  return _hasToken;
+  return _hasScopeKey;
 }
 
-// T? injectNullable<T>(Token<T> token) =>
+// T? injectNullable<T>(ScopeKey<T> key) =>
 //     ((Zone.current[Injector] as Injector?) ?? const Injector.empty())
-//         .get(token);
+//         .get(key);
 
-/// Implements the token store and lookup mechanism. The Injector [Type] is used
+/// Implements the key store and lookup mechanism. The Injector [Type] is used
 /// as the key into a [Zone] to store the injector instance for that zone.
 class Injector {
-  Injector(this.values) : parent = Zone.current[Injector];
+  Injector(this.values) : parent = Zone.current[Injector] as Injector?;
   const Injector.empty()
-      : values = const {},
+      : values = const <ScopeKey<dynamic>, dynamic>{},
         parent = null;
 
-  final Map<Token, Object?> values;
+  final Map<ScopeKey<dynamic>, dynamic> values;
   final Injector? parent;
 
-  T get<T>(Token<T> token) {
-    if (values.containsKey(token)) return token._cast(values[token]);
-    if (parent != null) return parent!.get(token);
-    if (token._defaultValue != Sentinel.noValue) {
-      return token._defaultValue as T;
+  T get<T>(ScopeKey<T> key) {
+    if (values.containsKey(key)) {
+      return key._cast(values[key]);
     }
-    throw MissingDependencyException(token);
+    if (parent != null) {
+      return parent!.get(key);
+    }
+    if (key._defaultValue != Sentinel.noValue) {
+      return key._defaultValue as T;
+    }
+
+    if (!isNullable<T>()) {
+      throw MissingDependencyException(key);
+    }
+    return null as T;
   }
 }
 
-/// Used by [provideFactories].
+/// Used by [Scope.factory].
 class FactoryInjector extends Injector {
-  FactoryInjector(this.factories) : super({});
+  FactoryInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
 
-  final Map<Token, ValueFactory> factories;
+  final Map<ScopeKey<dynamic>, ValueFactory<dynamic>> factories;
 
-  /// All tokens from [factories] for which the factory function has been called
+  /// All keys from [factories] for which the factory function has been called
   /// and not yet returned. Iteration order represents call order.
   // ignore: prefer_collection_literals
-  final underConstruction = LinkedHashSet<Token>();
+  final underConstruction = LinkedHashSet<ScopeKey<dynamic>>();
 
   /// The zone that contains this injector (`zone[Injector] == this`).
   ///
   /// [factories] are run in this zone, so [provide] calls in factory functions
-  /// can't shadow tokens from [factories].
+  /// can't shadow keys from [factories].
   late Zone zone;
 
   @override
-  T get<T>(Token<T> token) {
-    if (!factories.containsKey(token)) return super.get(token);
-    if (!values.containsKey(token)) {
-      final underConstructionAlready = !underConstruction.add(token);
+  T get<T>(ScopeKey<T> key) {
+    if (!factories.containsKey(key)) {
+      return super.get(key);
+    }
+    if (!values.containsKey(key)) {
+      final underConstructionAlready = !underConstruction.add(key);
       if (underConstructionAlready) {
         throw CircularDependencyException(
-            List.unmodifiable(underConstruction.skipWhile((t) => t != token)));
+            List.unmodifiable(underConstruction.skipWhile((t) => t != key)));
       }
-      values[token] = token._cast(zone.run(factories[token]!));
-      assert(underConstruction.last == token);
-      underConstruction.remove(token);
+      values[key] = key._cast(zone.run<T>(factories[key]! as T Function()));
+      // ignore: prefer_asserts_with_message
+      assert(underConstruction.last == key);
+      underConstruction.remove(key);
     }
-    return values[token] as T;
+    return values[key] as T;
   }
 }
 
-/// Thrown by [inject] when no value has been [provide]d for [token] and it has
+/// Thrown by [use] when no value has been [provide]d for [key] and it has
 /// no default value.
-class MissingDependencyException implements Exception {
-  MissingDependencyException(this.token);
+class MissingDependencyException<T> implements Exception {
+  MissingDependencyException(this.key);
 
-  final Token token;
+  final ScopeKey<T> key;
 
   @override
   String toString() =>
-      'MissingDependencyException: No value has been provided for $token, '
+      'MissingDependencyException: No value has been provided for $key, '
       'and it has no default value';
 }
 
-/// Thrown by [inject] when called inside a [provideFactories] callback and the
-/// [tokens] factories try to mutually inject each other.
-class CircularDependencyException implements Exception {
-  CircularDependencyException(this.tokens);
-  final List<Token> tokens;
+/// Thrown by [use] when called inside a [provideFactories] callback and the
+/// [keys] factories try to mutually inject each other.
+class CircularDependencyException<T> implements Exception {
+  CircularDependencyException(this.keys);
+  final List<ScopeKey<T>> keys;
 
   @override
   String toString() => 'CircularDependencyException: The factories for these '
-      'tokens depend on each other: ${tokens.join(" -> ")} -> ${tokens.first}';
+      'keys depend on each other: ${keys.join(" -> ")} -> ${keys.first}';
+}
+
+class DuplicateDependencyException<T> implements Exception {
+  DuplicateDependencyException(this.key);
+
+  final ScopeKey<T> key;
+
+  @override
+  String toString() => 'DuplicateDependencyException: '
+      'The key $key has already been added to this Scope.';
 }

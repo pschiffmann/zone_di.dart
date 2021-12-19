@@ -7,24 +7,39 @@ Note: this package is a place holder until zone_di is updated with nnbd.
 Author: Philipp Schiffmann <philippschiffmann93@gmail.com>
 
 
+To ensure type safety when providing values we recommend that you add the following to your analysis_options.yaml file:
+
+```yaml
+
+analyzer:
+  language:
+    strict-raw-types: true
+    strict-inference: true
+    # only available from dart 2.16
+    strict-casts: true
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
+```
+
 ## API overview
 
-The three main exports of this package are `Token`, `provide()` and `inject()`.
-Use tokens to declare dependencies that can be injected.
+The three main exports of this package are `ScopeKey`, `provide()` and `inject()`.
+Use keys to declare dependencies that can be injected.
 
 ```dart
-final greetingToken = Token<String>('my_package.greeting');
-final emphasisToken = Token<int>('my_package.emphasis');
+final greetingScopeKey = ScopeKey<String>('my_package.greeting');
+final emphasisScopeKey = ScopeKey<int>('my_package.emphasis');
 ```
 
 Unlike many other dependency injection frameworks, this package doesn't expose a _Container_ or _Injector_ class from which dependencies could be obtained.
-Instead, the current value of a token can be looked up with a call to the top-level function `inject()`.
+Instead, the current value of a key can be looked up with a call to the top-level function `inject()`.
 
 ```dart
 class Greeter {
   Greeter()
-      : greeting = inject(greetingToken),
-        emphasis = inject(emphasisToken);
+      : greeting = inject(greetingScopeKey),
+        emphasis = inject(emphasisScopeKey);
 
   final String greeting;
   final int emphasis;
@@ -36,13 +51,13 @@ class Greeter {
 ```
 
 Values are made available for injection by passing them to the top-level function `provide()`, together with a context callback function.
-The function will be called immediately, and the (token, value) associations exist only inside of the context of this call tree.
+The function will be called immediately, and the (key, value) associations exist only inside of the context of this call tree.
 
 ```dart
 void main() {
   provide({
-    greetingToken: 'Hello',
-    emphasisToken: 1,
+    greetingScopeKey: 'Hello',
+    emphasisScopeKey: 1,
   }, () {
     Greeter().greet('world'); // 'Hello, world!'
   });
@@ -55,21 +70,21 @@ void main() {
 }
 ```
 
-Different values can be provided to different parts of the program for the same token.
-`provide()` contexts can be nested, and inner values shadow outer ones for the same token.
-In this way, token lookup works analogous to name lookup in functions (local variable shadows function parameter, shadows class property, shadows global variable), except that it works across the boundaries of the current function.
+Different values can be provided to different parts of the program for the same key.
+`provide()` contexts can be nested, and inner values shadow outer ones for the same key.
+In this way, key lookup works analogous to name lookup in functions (local variable shadows function parameter, shadows class property, shadows global variable), except that it works across the boundaries of the current function.
 
 ```dart
 void main() {
   provide({
-    greetingToken: 'Hello',
-    emphasisToken: 1,
+    greetingScopeKey: 'Hello',
+    emphasisScopeKey: 1,
   }, () {
-    provide({greetingToken: 'Good day'}, () {
+    provide({greetingScopeKey: 'Good day'}, () {
       Greeter().greet('Philipp'); // 'Good day, Philipp!'
     });
 
-    provide({emphasisToken: 3}, () {
+    provide({emphasisScopeKey: 3}, () {
       Greeter().greet('Paul'); // 'Hello, Paul!!!'
     });
   });
@@ -90,10 +105,10 @@ Future delay1Sec() => Future.delayed(Duration(seconds: 1));
 ///     Hello, John!
 ///     Goodbye, John!
 void main() {
-  provide({emphasisToken: 1}, () {
+  provide({emphasisScopeKey: 1}, () {
     final names = ['Alice', 'Bob', 'John'];
 
-    provide({greetingToken: 'Hello'}, () async {
+    provide({greetingScopeKey: 'Hello'}, () async {
       final greeter = Greeter();
       for (final name in names) {
         greeter.greet(name);
@@ -101,7 +116,7 @@ void main() {
       }
     });
 
-    provide({greetingToken: 'Goodbye'}, () async {
+    provide({greetingScopeKey: 'Goodbye'}, () async {
       final greeter = Greeter();
       await Future.delayed(Duration(milliseconds: 500));
       for (final name in names) {
@@ -113,7 +128,7 @@ void main() {
 }
 ```
 
-Finally, there's also `provideFactories()` that constructs token values from the given factory functions and handles dependencies between the factories.
+Finally, there's also `provideFactories()` that constructs key values from the given factory functions and handles dependencies between the factories.
 For more details on that and the other functions, see the [API docs](https://pub.dev/documentation/zone_di/latest/).
 
 ## How it works
@@ -152,7 +167,7 @@ You can use this to instantiate a single class or call a single function that `i
 ```dart
 void main() {
   final greeter =
-      provide({greetingToken: 'Hello', emphasisToken: 1}, () => Greeter());
+      provide({greetingScopeKey: 'Hello', emphasisScopeKey: 1}, () => Greeter());
 
   greeter.greet('world'); // `greeter` can now be used outside of the context
                           // function.
@@ -163,7 +178,7 @@ void main() {
 
 Other people can't see what your classes and functions `inject()`.
 Make sure to explicitly list all dependencies of your class or function in its doc comment!
-Remember to also include transitive dependencies – if your function instantiates a class with a dependency on `fooToken`, and your function doesn't provide a value for it, then your function should also list that token as its dependency.
+Remember to also include transitive dependencies – if your function instantiates a class with a dependency on `fooScopeKey`, and your function doesn't provide a value for it, then your function should also list that key as its dependency.
 
 ---
 
@@ -173,15 +188,15 @@ If you use zone_di in your published pub packages and expose the injection to th
 import 'package:meta/meta.dart' show required;
 import 'package:zone_di/zone_di.dart' as zone_di;
 
-final fooToken = Token<String>('my_package.foo');
-final barToken = Token<int>('my_package.bar');
+final fooScopeKey = ScopeKey<String>('my_package.foo');
+final barScopeKey = ScopeKey<int>('my_package.bar');
 
 void provide(void Function() f, {@required String foo, int bar}) {
-  zone_di.provide({fooToken: foo, barToken: bar}, f);
+  zone_di.provide({fooScopeKey: foo, barScopeKey: bar}, f);
 }
 ```
 
-This way, a consumer of your package doesn't have to look up what `Token`s are, and gets a type-safe list of all of your public dependencies at a glance.
+This way, a consumer of your package doesn't have to look up what `ScopeKey`s are, and gets a type-safe list of all of your public dependencies at a glance.
 
 ## Special thanks
 
