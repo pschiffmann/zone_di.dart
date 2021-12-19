@@ -1,9 +1,9 @@
 # Scope
 
-Scope provides dependency injection for Dart applications
-allowing you to inject values into a scope and then access from any method called within that scope.
+Scope provides dependency injection (DI) for Dart applications
+allowing you to inject values into a scope and then 'use' those dependencies from any method (or constructor) called within that scope.
 
-Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides di for your call stack.
+Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides DI for your call stack.
 
 For Java developers Scope provides similar functionality to a thread local variables
 
@@ -16,9 +16,12 @@ All credit goes to Phillipp's original implementation without which Scope wouldn
 
 
 ## API overview
-The Scope API uses a builder pattern allowing you to register any number of strictly typed  variables.
+The Scope API uses a builder pattern allowing you to register any number of strictly typed values.
 
-You can then use any of the variables from any method called from within the Scope.
+You can then 'use' the registered values from any method called from within the Scope.
+
+The registered values are essentially stored in a map and are retrieved using a globally defined key.
+
 
 ```dart
 Scope()
@@ -29,59 +32,34 @@ Scope()
         var name = use(nameKey);
     });
 ```
+In the above example we register two values:
+* an int with a key 'ageKey' and a value 18.
+* a String with a key 'nameKey' and a value of 'brett'.
 
-Scoped values are essentially stored as a typed map.
-To store a value you must create a typed key:
+The age and name values are then retrieved using the `use` method and the ScopeKey they where stored with.
+
+
+## ScopeKey
+To store and use a value you must create a typed key for each value using a ScopeKey:
 
 ```dart
 final ageKey = ScopeKey<int>();
 final nameKey = ScopeKey<String>();
+final monthKey = ScopeKey<String>();
 ```
 
-Keys are declared at globally and it's is
-standard practice to place you Keys in a separate dart library.
+As the ScopeKey is typed the values returned from the `use` call are also correctly typed.
 
-Scopes can be nested with the same key 
-used at each level.
+Keys are declared globally and it's is standard practice to place you Keys in a separate dart library as they need to be available at both the registration site and the use site.
 
-When you use a key within a nested Scoped
-the value from the closest scope is returned.
+# Example
 
-If the key isn't in the nearest Scope we search up thorough parent scopes.
-
-```dart
-  Scope()
-    ..value<int>(ageKey, 18)
-    ..value<String>(nameKey, 'brett')
-    ..run(() {
-      var age = use(ageKey);
-      var name = use(nameKey);
-      Scope()
-        ..value<int>(ageKey, 21)
-        ..run(() {
-          var age = use(ageKey);
-          var name = use(nameKey);
-    });
-```
-
-
-
-The three main exports of this package are `Token`, `provide()` and `inject()`.
-Use tokens to declare dependencies that can be injected.
-
-```dart
-final greetingToken = Token<String>('my_package.greeting');
-final emphasisToken = Token<int>('my_package.emphasis');
-```
-
-Unlike many other dependency injection frameworks, this package doesn't expose a _Container_ or _Injector_ class from which dependencies could be obtained.
-Instead, the current value of a token can be looked up with a call to the top-level function `inject()`.
-
+We start by creating a client that will 'use' values registered into the Scope.
 ```dart
 class Greeter {
   Greeter()
-      : greeting = inject(greetingToken),
-        emphasis = inject(emphasisToken);
+      : greeting = use(greetingToken),
+        emphasis = use(emphasisToken);
 
   final String greeting;
   final int emphasis;
@@ -92,48 +70,61 @@ class Greeter {
 }
 ```
 
-Values are made available for injection by passing them to the top-level function `provide()`, together with a context callback function.
+Values are made available for registering them with a `Scope`.
 The function will be called immediately, and the (token, value) associations exist only inside of the context of this call tree.
 
 ```dart
 void main() {
-  provide({
-    greetingToken: 'Hello',
-    emphasisToken: 1,
-  }, () {
+  Scope()
+    ..value<String>(greetingToken, 'Hello')
+    ..value<int>(emphasisToken, 1)
+    ..run(() {
+    // The greet method calls `use` to retrieve the registered values
     Greeter().greet('world'); // 'Hello, world!'
   });
 
-  Greeter().greet('you'); // throws: `MissingDependencyException`, because the
-                          // `inject()` call inside of the `Greeter` constructor
-                          // was made outside of a `provide()` context.
-                          // The previously provided values don't leak out from
-                          // their context.
+  Greeter().greet('you'); // throws: `MissingDependencyException`, because 
+                          // `use()` is called outside the `Scope.run` method.
+                          // The previously registered values arn't available
+                          // outside of the scope.
 }
 ```
 
-Different values can be provided to different parts of the program for the same token.
-`provide()` contexts can be nested, and inner values shadow outer ones for the same token.
-In this way, token lookup works analogous to name lookup in functions (local variable shadows function parameter, shadows class property, shadows global variable), except that it works across the boundaries of the current function.
+# Nesting
+
+Scopes can also be nested with the same key used at each level.
+
+When you `use` a key within a nested Scoped the value from the closest scope is returned.
+
+If the key isn't in the immediate Scope we search up thorough parent scopes.
 
 ```dart
 void main() {
-  provide({
-    greetingToken: 'Hello',
-    emphasisToken: 1,
-  }, () {
-    provide({greetingToken: 'Good day'}, () {
-      Greeter().greet('Philipp'); // 'Good day, Philipp!'
-    });
 
-    provide({emphasisToken: 3}, () {
-      Greeter().greet('Paul'); // 'Hello, Paul!!!'
-    });
+  // parent scope
+  Scope()
+    ..value<String>(greetingToken, 'Hello')
+    ..value<int>(emphasisToken,  1)
+     ..run(() {
+    
+          /// Nest child Scope
+          Scope()
+          ..value<String>(greetingToken, 'Good day')
+          ..run(() {
+               Greeter().greet('Philipp'); // 'Good day, Philipp!'
+          });
+
+         /// Also nested witin the parent scope
+         Scope()
+          ..value<int>(emphasisToken, 3)
+          ..run(() {
+               Greeter().greet('Paul'); // 'Hello, Paul!!!'
+         });
   });
 }
 ```
 
-Notice that this even works for asynchronous code – multiple `provide()` contexts can be executed concurrently without values leaking from one context into the other.
+Notice that this even works for asynchronous code – multiple scopes can be executed concurrently without values leaking from one context into the other.
 
 ```dart
 Future delay1Sec() => Future.delayed(Duration(seconds: 1));
@@ -147,26 +138,32 @@ Future delay1Sec() => Future.delayed(Duration(seconds: 1));
 ///     Hello, John!
 ///     Goodbye, John!
 void main() {
-  provide({emphasisToken: 1}, () {
-    final names = ['Alice', 'Bob', 'John'];
+  Scope()
+     ..value<int>(emphasisToken, 1)
+     ..run(() {
+          final names = ['Alice', 'Bob', 'John'];
 
-    provide({greetingToken: 'Hello'}, () async {
-      final greeter = Greeter();
-      for (final name in names) {
-        greeter.greet(name);
-        await delay1Sec();
-      }
-    });
+         Scope()
+         ..value<String>(greetingToken, 'Hello')
+         ..run(() async {
+           final greeter = Greeter();
+           for (final name in names) {
+             greeter.greet(name);
+             await delay1Sec();
+           }
+         });
 
-    provide({greetingToken: 'Goodbye'}, () async {
-      final greeter = Greeter();
-      await Future.delayed(Duration(milliseconds: 500));
-      for (final name in names) {
-        greeter.greet(name);
-        await delay1Sec();
-      }
-    });
-  });
+         Scope()
+         ..value<String>(greetingToken, 'Goodbye')
+         ..run(() async {
+                final greeter = Greeter();
+                await Future.delayed(Duration(milliseconds: 500));
+                for (final name in names) {
+                  greeter.greet(name);
+                  await delay1Sec();
+                }
+         });
+     });
 }
 ```
 
