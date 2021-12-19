@@ -184,6 +184,7 @@ Scope()
 ..run(() {
      print('age: ${use(ageKey)}');
  });
+ ```
  
  The factory value is calculated once by calling the method passed to the `factory` method.
  The factory method is called when the `run` method is called.  The calcualated factory value is then fixed for the life of the Scope.
@@ -203,6 +204,7 @@ Scope()
 ..run(() {
      print('age: ${use(ageKey)}');
  });
+ ```
  
  A generator value is reclaculated each time the `use` method is called for the registed ScopeKey and it is not calculated until the `use` method is called.
  
