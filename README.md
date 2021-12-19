@@ -10,8 +10,36 @@ For Java developers Scope provides similar functionality to a thread local varia
 Authors: Philipp Schiffmann <philippschiffmann93@gmail.com>
      S. Brett Sutton
 
+Scope is a reimagining of Philipp's zone_id package.
+All credit goes to Phillipp's original implementation without which Scope wouldn't exist.
+
+
 
 ## API overview
+The Scope API uses a builder pattern allowing you to register any number of strictly typed  variables.
+
+You can then use any of the variables from any method called from within the Scope.
+
+```dart
+Scope()
+    ..value<int>(ageKey, 18)
+    ..value<String>(nameKey, 'brett')
+    ..run(() {
+        var age = use(ageKey);
+        var name = use(nameKey);
+    });
+```
+
+Scoped values are essentially stored as a typed map.
+To store a value you must create a typed key:
+
+```dart
+final ageKey = ScopeKey<int>();
+final nameKey = ScopeKey<String>();
+```
+
+Keys are declared at globally and it's is
+standard practice to place you Keys in a separate dart library.
 
 The three main exports of this package are `Token`, `provide()` and `inject()`.
 Use tokens to declare dependencies that can be injected.
