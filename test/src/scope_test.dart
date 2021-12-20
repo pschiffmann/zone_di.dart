@@ -27,7 +27,7 @@ final keyGNull = ScopeKey<G?>('G?');
 final keyI = ScopeKey<I>('I');
 
 void main() {
-  test('scope ...', () async {
+  test('scope ...', () {
     final keyAge = ScopeKey<int>('an int');
     final keyName = ScopeKey<String>('a String');
     final keyRandom = ScopeKey<String>('Random Factory');
@@ -42,6 +42,22 @@ void main() {
       });
   });
 
+  group('async calls', () {
+    test('scope ...', () async {
+      final keyAge = ScopeKey<int>('age');
+
+      final scope = Scope()..value<int>(keyAge, 18);
+
+      final one = await scope.run<Future<int>>(() async {
+        final delayedvalue =
+            Future<int>.delayed(const Duration(seconds: 1), () => use(keyAge));
+
+        return delayedvalue;
+      });
+
+      expect(one, equals(18));
+    });
+  });
   group('inject()', () {
     test('outside of provide() fails', () {
       expect(() => use(keyS1), throwsMissingDependencyException);

@@ -1,7 +1,5 @@
 part of scope;
 
-
-
 /// Used by [Scope.factory].
 class FactoryInjector extends Injector {
   FactoryInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
@@ -13,7 +11,7 @@ class FactoryInjector extends Injector {
   // ignore: prefer_collection_literals
   final underConstruction = LinkedHashSet<ScopeKey<dynamic>>();
 
-  /// The zone that holds the injected values in this Scope 
+  /// The zone that holds the injected values in this Scope
   /// ```
   ///   zone[Injector] == this
   /// ```

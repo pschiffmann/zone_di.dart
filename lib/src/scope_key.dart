@@ -16,12 +16,12 @@ part of scope;
 /// The type argument [T] is used to infer the return type of [use].
 @sealed
 class ScopeKey<T> {
-  ScopeKey([this._debugName]) : _defaultValue = Sentinel.noValue {
-    _debugName ??= T.runtimeType.toString();
+  ScopeKey([String? debugName]) : _defaultValue = Sentinel.noValue {
+    _debugName = debugName ?? T.runtimeType.toString();
   }
-  ScopeKey.withDefault(T defaultValue, this._debugName)
+  ScopeKey.withDefault(T defaultValue, String? debugName)
       : _defaultValue = defaultValue {
-    _debugName ??= T.runtimeType.toString();
+    _debugName = debugName ?? T.runtimeType.toString();
   }
 
   String? _debugName;
