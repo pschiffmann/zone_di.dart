@@ -14,7 +14,14 @@ part 'factory_injector.dart';
 typedef Generator = dynamic Function();
 
 class Scope {
-  Scope();
+  Scope([String? debugName]) {
+    _debugName = debugName ?? 'Unnamed Scope - pass debugName to ctor';
+  }
+
+  @override
+  String toString() => _debugName;
+
+  late final String _debugName;
 
   final provided = <ScopeKey<dynamic>, dynamic>{};
   final _factories = <ScopeKey<dynamic>, Generator>{};

@@ -58,6 +58,28 @@ void main() {
       expect(one, equals(18));
     });
   });
+
+  group('existance', () {
+    test('withinScope', () {
+      Scope().run(() {
+        expect(isWithinScope(), isTrue);
+      });
+    });
+    test('not withinScope', () {
+      expect(isWithinScope(), isFalse);
+    });
+
+    test('hasScopeKey', () {
+      Scope()
+        ..value<A>(keyA, A('A'))
+        ..run(() {
+          expect(hasScopeKey<A>(keyA), isTrue);
+        });
+    });
+    test('not hasScopeKey', () {
+      expect(hasScopeKey<A>(keyA), isFalse);
+    });
+  });
   group('inject()', () {
     test('outside of provide() fails', () {
       expect(() => use(keyS1), throwsMissingDependencyException);
