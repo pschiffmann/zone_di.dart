@@ -1,6 +1,6 @@
-name: zone_di2
-version: 2.0.0
-homepage: https://github.com/pschiffmann/zone_di.dart
+name: scope
+version: 1.0.0
+homepage: https://github.com/noojee/scope
 description: Dependency injection with a functional API that works without code generation, mirrors or passing around Injector objects.
 environment: 
   sdk: '>=2.12.0 <3.0.0'

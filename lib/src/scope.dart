@@ -1,4 +1,15 @@
-part of zone;
+library scope;
+
+import 'dart:async';
+import 'dart:collection';
+
+import 'package:meta/meta.dart';
+
+import 'exceptions.dart';
+
+part 'scope_key.dart';
+part 'injector.dart';
+part 'factory_injector.dart';
 
 typedef Generator = dynamic Function();
 
@@ -34,9 +45,23 @@ class Scope {
     _factories.putIfAbsent(key, () => factory);
   }
 
+  /// Injects a generated value into the [Scope].
+  ///
+  /// The generator [factory] is called each time [use] for the [key].
+  ///
+  /// The difference between [factory] and [generator] is that for a [factory]
+  /// the [factory] method is only called once where as the [generator]s
+  /// [factory] method is called repeatedly.
+  ///
+  /// The [generator] [factory] method is NOT called when the [run] method
+  /// is called.
+  ///
+  /// !!!!Note: currently generators are not implmented!!!!
+  void generator<T>(ScopeKey<T> key, T Function() factory) {
+    throw UnimplementedError('generators are not currently supported');
+  }
+
   /// Runs [action] within the defined [Scope].
-  ///
-  ///
   R run<R>(R Function() action) {
     _resolveEagerFactories();
 
@@ -59,4 +84,57 @@ class Scope {
   }
 
   static T use<T>(ScopeKey<T> key) => _use(key);
+
+  /// Returns true if [key] is contained within the current scope
+  static bool hasScopeKey<T>(ScopeKey<T> key) => _hasScopeKey(key);
+
+  /// Returns true if the caller is running within a [Scope]
+  static bool isWithinScope() => _isWithinScope();
 }
+
+typedef ValueFactory<T> = T? Function();
+
+/// Returns the value provided for [key], or the keys default value if no
+/// value was provided.
+///
+/// May throw [MissingDependencyException] or [CircularDependencyException].
+T use<T>(ScopeKey<T> key) => _use(key);
+
+/// Returns the value provided for [key], or the keys default value if no
+/// value was provided.
+///
+/// May throw [MissingDependencyException] or [CircularDependencyException].
+T _use<T>(ScopeKey<T> key) {
+  final injector =
+      (Zone.current[Injector] as Injector?) ?? const Injector.empty();
+  final value = injector.get(key);
+
+  return value;
+}
+
+/// Returns true if [T] was declared as a nullable type (e.g. String?)
+bool isNullable<T>() => null is T;
+
+/// Returns true if [key] is contained within the current scope
+bool hasScopeKey<T>(ScopeKey<T> key) => _hasScopeKey(key);
+
+/// Returns true if [key] is contained within the current scope
+bool _hasScopeKey<T>(ScopeKey<T> key) {
+  var _hasScopeKey = true;
+  final injector =
+      (Zone.current[Injector] as Injector?) ?? const Injector.empty();
+  try {
+    final value = injector.get(key);
+    if (isNullable<T>() && value == null) {
+      _hasScopeKey = false;
+    }
+  } on MissingDependencyException<T> catch (_) {
+    _hasScopeKey = false;
+  }
+  return _hasScopeKey;
+}
+
+/// Returns true if the caller is running within a [Scope]
+bool isWithinScope() => _isWithinScope();
+
+bool _isWithinScope() => Zone.current[Injector] != null;

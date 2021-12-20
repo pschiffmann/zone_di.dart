@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:scope/scope.dart';
+
 import 'package:test/test.dart';
-import 'package:zone_di2/src/zone_di.dart';
 
 final throwsMissingDependencyException =
     throwsA(const TypeMatcher<MissingDependencyException<dynamic>>());
@@ -100,7 +101,16 @@ void main() {
     });
   });
 
-  group('provideFactories()', () {
+  group('return values', () {
+    test('return an int', () {
+      final ageKey = ScopeKey<int>();
+      final scope = Scope()..value<int>(ageKey, 18);
+      final age = scope.run<int>(() => use(ageKey));
+
+      expect(age, equals(18));
+    });
+  });
+  group('Scope.factory()', () {
     test('calls all factories in own zone', () {
       final outerA = A('outer');
       final innerA = A('inner');

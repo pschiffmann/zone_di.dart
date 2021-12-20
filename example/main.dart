@@ -2,9 +2,9 @@
 /// configuration and dependencies around via dependency injection.
 ///
 /// Class names borrowed from [Aqueduct](https://aqueduct.io).
-library zone_di.example;
+library scope.example;
 
-import 'package:zone_di2/zone_di2.dart';
+import 'package:scope/scope.dart';
 
 //
 // Persistence layer interface
