@@ -1,7 +1,7 @@
 name: di_zone2
 version: 1.0.0
 homepage: https://github.com/noojee/scope
-documentation: scope.noojee.dev
+documentation: http://scope.noojee.dev
 description: Dependency injection for Dart
 repository: https://github.com/noojee/scope
 environment: 
