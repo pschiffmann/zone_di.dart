@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:scope/scope.dart';
+import 'package:di_zone2/scope.dart';
 
 import 'package:test/test.dart';
 
@@ -11,9 +11,9 @@ final throwsMissingDependencyException =
 final keyS1 = ScopeKey<String>('S1');
 final keyS2 = ScopeKey<String>('S2');
 final keyStrWithDefault = ScopeKey<String?>.withDefault(
-    'StrWithDefault', 'StrWithDefault default value');
+    'StrWithDefault default value', 'StrWithDefault');
 final keyNullStrWithDefault =
-    ScopeKey<String?>.withDefault('NullStrWithDefault', null);
+    ScopeKey<String?>.withDefault(null, 'NullStrWithDefault');
 
 final keyA = ScopeKey<A>('A');
 final keyANull = ScopeKey<A?>('A?');
@@ -94,7 +94,10 @@ void main() {
     });
 
     test('with not-provided key uses default value if available', () {
-      expect(use(keyStrWithDefault), 'StrWithDefault default value');
+      expect(
+        use(keyStrWithDefault),
+        'StrWithDefault default value',
+      );
       expect(use(keyNullStrWithDefault), isNull);
       expect(use(keyNullStrWithDefault), isNull);
     });
