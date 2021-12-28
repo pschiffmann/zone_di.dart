@@ -4,7 +4,7 @@
 /// Class names borrowed from [Aqueduct](https://aqueduct.io).
 library scope.example;
 
-import 'package:di_zone2/scope.dart';
+import 'package:di_zone2/di_zone2.dart';
 
 //
 // Persistence layer interface
