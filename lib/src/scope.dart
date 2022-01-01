@@ -130,12 +130,12 @@ bool _hasScopeKey<T>(ScopeKey<T> key) {
   var _hasScopeKey = true;
   final injector =
       (Zone.current[Injector] as Injector?) ?? const Injector.empty();
-  try {
+  if (injector.hasKey(key)) {
     final value = injector.get(key);
     if (isNullable<T>() && value == null) {
       _hasScopeKey = false;
     }
-  } on MissingDependencyException<T> catch (_) {
+  } else {
     _hasScopeKey = false;
   }
   return _hasScopeKey;
