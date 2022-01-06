@@ -1,3 +1,6 @@
+# 2.0.1
+Updated readme and pubspec description.
+
 # 2.0.0
 - renamed packaged to scope.
 

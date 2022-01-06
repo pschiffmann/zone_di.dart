@@ -1,7 +1,8 @@
 # Scope
 
-Scope provides dependency injection (DI) for Dart applications
-allowing you to inject values into a scope and then 'use' those dependencies from any method (or constructor) called within that scope.
+Scope provides Inversion of Control using the dependency injection (DI) pattern for Dart applications.
+
+Scope allows you to inject values into a scope and then 'use' those dependencies from any method (or constructor) called within that scope.
 
 Scope is not a replacement for the likes of Provider. Provider does dependency injection for your BuildContext whilst Scope provides DI for your call stack.
 
