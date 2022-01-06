@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:di_zone2/di_zone2.dart';
+import 'package:scope/scope.dart';
 
 import 'package:test/test.dart';
 
