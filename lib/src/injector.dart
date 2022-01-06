@@ -27,4 +27,18 @@ class Injector {
     }
     return null as T;
   }
+
+  bool hasKey<T>(ScopeKey<T> key) {
+    if (values.containsKey(key)) {
+      return true;
+    }
+    if (parent != null) {
+      return parent!.hasKey(key);
+    }
+    if (key._defaultValue != Sentinel.noValue) {
+      return true;
+    }
+
+    return false;
+  }
 }
