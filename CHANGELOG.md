@@ -1,3 +1,6 @@
+# 2.0.0
+- renamed packaged to scope.
+
 # 1.0.2
 - changed hasScopeKey to not throw an exception internally as it is a pain when debugging with all exception catching on.
 
