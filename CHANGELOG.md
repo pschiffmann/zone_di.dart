@@ -1,3 +1,6 @@
+# 2.1.2
+- purged singleton from the doc as it is now single.
+
 # 2.1.1
 - purged the term generator for the code/doco as it should be sequence.
 
