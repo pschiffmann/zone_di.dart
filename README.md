@@ -12,12 +12,6 @@ For Java developers Scope provides similar functionality to thread local variabl
 
 > Scope supports nested scopes; overload or add additional values at each level.
 
-Authors: Philipp Schiffmann <philippschiffmann93@gmail.com>
-     S. Brett Sutton
-
-Scope is a reimagining of Philipp's zone_id package.
-All credit goes to Phillipp's original implementation without which Scope wouldn't exist.
-
 
 The best way to understand Scope is with an example:
 
@@ -71,6 +65,18 @@ int tracker()
 }
 ```
 
-See the scope documentation at:
+See the Scope documentation at:
 
 https://scope.noojee.dev
+
+The best practice guide is worth a read:
+
+https://scope.noojee.dev/guides/best-practice 
+
+
+    Authors: 
+    Philipp Schiffmann <philippschiffmann93@gmail.com>
+    S. Brett Sutton
+
+Scope is a reimagining of Philipp's zone_id package.
+All credit goes to Phillipp's original implementation without which Scope wouldn't exist.
