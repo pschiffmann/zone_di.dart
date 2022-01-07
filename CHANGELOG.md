@@ -1,3 +1,6 @@
+# 2.1.1
+- purged the term generator for the code/doco as it should be sequence.
+
 # 2.1.0
 - Deprecated factory in favour of single. Added sequence in favour of the originally planned generator.
 

@@ -1,5 +1,5 @@
 name: scope
-version: 2.1.0
+version: 2.1.1
 homepage: https://github.com/noojee/scope
 documentation: https://scope.noojee.dev
 description: A Dependency injection (Inversion of Control) library. Supports nested Scopes and multiple values of the same type.
