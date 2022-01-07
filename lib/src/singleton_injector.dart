@@ -1,8 +1,8 @@
 part of scope;
 
-/// Used by [Scope.factory].
-class FactoryInjector extends Injector {
-  FactoryInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
+/// Used by [Scope.single].
+class SingletonInjector extends Injector {
+  SingletonInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
 
   final Map<ScopeKey<dynamic>, ValueFactory<dynamic>> factories;
 
@@ -16,8 +16,8 @@ class FactoryInjector extends Injector {
   ///   zone[Injector] == this
   /// ```
   ///
-  /// [Scope.factory] and [Scope.generator] values are run in this zone,
-  /// so [Scope]s nested in  [Scope.factory]  and [Scope.generator] methods
+  /// [Scope.single] and [Scope.sequence] values are run in this zone,
+  /// so [Scope]s nested in  [Scope.single]  and [Scope.sequence] methods
   /// can't shadow keys from this [Scope].
   late Zone zone;
 

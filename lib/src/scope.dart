@@ -9,7 +9,7 @@ import 'exceptions.dart';
 
 part 'scope_key.dart';
 part 'injector.dart';
-part 'factory_injector.dart';
+part 'singleton_injector.dart';
 
 typedef Generator = dynamic Function();
 
@@ -24,7 +24,8 @@ class Scope {
   late final String _debugName;
 
   final provided = <ScopeKey<dynamic>, dynamic>{};
-  final _factories = <ScopeKey<dynamic>, Generator>{};
+  final _singletons = <ScopeKey<dynamic>, Generator>{};
+  final _generators = <ScopeKey<dynamic>, Generator>{};
 
   /// Injects [value] into the [Scope].
   ///
@@ -38,53 +39,68 @@ class Scope {
     provided.putIfAbsent(key, () => value);
   }
 
-  /// Injects a [factory] generated value into the [Scope].
+  @Deprecated('Use single')
+  void factory<T>(ScopeKey<T> key, T Function() factory) =>
+      single(key, factory);
+
+  /// Injects a [single] value into the [Scope].
   ///
-  /// Factory functions may [use] values from other factories
-  /// registered within the same [Scope].
+  /// Singletons may [use] [value]s, other [single]s
+  /// and [sequence]s registered within the same [Scope].
   ///
-  /// Each factory is eagerly called when [Scope.run] is called
+  /// Each [single] is eagerly called when [Scope.run] is called
   /// and are fully resolved when the [Scope.run]'s s action is called.
-  void factory<T>(ScopeKey<T> key, T Function() factory) {
-    if (_factories.containsKey(key)) {
+  void single<T>(ScopeKey<T> key, T Function() factory) {
+    if (_singletons.containsKey(key)) {
       throw DuplicateDependencyException(key);
     }
-    _factories.putIfAbsent(key, () => factory);
+    _singletons.putIfAbsent(key, () => factory);
   }
 
   /// Injects a generated value into the [Scope].
   ///
-  /// The generator [factory] is called each time [use] for the [key].
+  /// The [sequence]'s [factory] method is called each time [use]
+  /// for the [key] is called.
   ///
-  /// The difference between [factory] and [generator] is that for a [factory]
-  /// the [factory] method is only called once where as the [generator]s
-  /// [factory] method is called repeatedly.
+  /// The difference between [single] and [sequence] is that
+  /// for a [single] the [factory] method is only called once where as
+  /// the [sequence]s [factory] method is called each time [use] for
+  /// the [sequence]'s key is called.
   ///
   /// The [generator] [factory] method is NOT called when the [run] method
   /// is called.
   ///
-  /// !!!!Note: currently generators are not implmented!!!!
-  void generator<T>(ScopeKey<T> key, T Function() factory) {
-    throw UnimplementedError('generators are not currently supported');
+  void sequence<T>(ScopeKey<T> key, T Function() factory) {
+    if (_generators.containsKey(key)) {
+      throw DuplicateDependencyException(key);
+    }
+    value<dynamic>(key, factory);
   }
 
   /// Runs [action] within the defined [Scope].
   R run<R>(R Function() action) {
-    _resolveEagerFactories();
+    _resolveSingletons();
 
     return runZoned(action, zoneValues: {
-      Injector: Injector(provided.map<ScopeKey<dynamic>, dynamic>(
-          (t, dynamic v) =>
-              MapEntry<ScopeKey<dynamic>, dynamic>(t, t._cast(v)))),
+      Injector:
+          Injector(provided.map<ScopeKey<dynamic>, dynamic>((t, dynamic v) {
+        if (v is Function) {
+          return MapEntry<ScopeKey<dynamic>, dynamic>(t, t._castFunction(v));
+        } else {
+          return MapEntry<ScopeKey<dynamic>, dynamic>(t, t._cast(v));
+        }
+      })),
     });
   }
 
-  void _resolveEagerFactories() {
-    final injector = FactoryInjector(_factories);
+  void _resolveSingletons() {
+    final injector = SingletonInjector(_singletons);
     runZoned(() {
       injector.zone = Zone.current;
       // Cause [injector] to call all factories.
-      for (final key in _factories.keys) {
+      for (final key in _singletons.keys) {
+        /// Resolve the singlton by calling its factory method
+        /// and adding it as a value.
         value<dynamic>(key, injector.get<dynamic>(key));
       }
     }, zoneValues: {Injector: injector});
@@ -122,7 +138,9 @@ T _use<T>(ScopeKey<T> key) {
 /// Returns true if [T] was declared as a nullable type (e.g. String?)
 bool isNullable<T>() => null is T;
 
-/// Returns true if [key] is contained within the current scope
+/// Returns true if [key] is contained within the current scope.
+/// For nullable types even if the value is null [hasScopeKey]
+/// will return true if a value was injected.
 bool hasScopeKey<T>(ScopeKey<T> key) => _hasScopeKey(key);
 
 /// Returns true if [key] is contained within the current scope
@@ -131,10 +149,11 @@ bool _hasScopeKey<T>(ScopeKey<T> key) {
   final injector =
       (Zone.current[Injector] as Injector?) ?? const Injector.empty();
   if (injector.hasKey(key)) {
-    final value = injector.get(key);
-    if (isNullable<T>() && value == null) {
-      _hasScopeKey = false;
-    }
+    // final value = injector.get(key);
+    // if (isNullable<T>() && value == null) {
+    //   _hasScopeKey = false;
+    // }
+    _hasScopeKey = true;
   } else {
     _hasScopeKey = false;
   }

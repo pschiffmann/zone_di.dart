@@ -24,10 +24,12 @@ class ScopeKey<T> {
     _debugName = debugName ?? T.runtimeType.toString();
   }
 
-  String? _debugName;
+  late final String? _debugName;
   final Object? _defaultValue;
 
   T _cast(dynamic v) => v as T;
+
+  T Function() _castFunction(dynamic v) => v as T Function();
 
   @override
   String toString() => 'ScopeKey(${_debugName!})';

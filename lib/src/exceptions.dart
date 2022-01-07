@@ -13,7 +13,7 @@ class MissingDependencyException<T> implements Exception {
       'and it has no default value';
 }
 
-/// Thrown by [use] when called inside a [Scope.factory] or [Scope.generator]
+/// Thrown by [use] when called inside a [Scope.single] or [Scope.sequence]
 /// callback and the [keys] factories try to mutually inject each other.
 class CircularDependencyException<T> implements Exception {
   CircularDependencyException(this.keys);

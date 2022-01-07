@@ -2,7 +2,7 @@ name: scope
 version: 2.0.2
 homepage: https://github.com/noojee/scope
 documentation: https://scope.noojee.dev
-description: Scope provides dependency injection (DI) for Dart applications allowing you to inject values into a scope and then 'use' those dependencies from any method (or constructor) called within that scope.
+description: A Dependency injection (Inversion of Control) library. Supports nested Scopes and multiple values of the same type.
 repository: https://github.com/noojee/scope
 environment: 
   sdk: '>=2.12.0 <3.0.0'
@@ -10,4 +10,5 @@ dependencies:
   meta: ^1.1.7
 dev_dependencies: 
   lint_hard: ^1.0.2
+  money2: ^3.1.2
   test: ^1.6.7

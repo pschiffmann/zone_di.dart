@@ -25,17 +25,20 @@ final keyF = ScopeKey<F>('F');
 final keyG = ScopeKey<G>('G');
 final keyGNull = ScopeKey<G?>('G?');
 final keyI = ScopeKey<I>('I');
+final keyInt = ScopeKey<int>('int');
 
 void main() {
   test('scope ...', () {
     final keyAge = ScopeKey<int>('an int');
     final keyName = ScopeKey<String>('a String');
-    final keyRandom = ScopeKey<String>('Random Factory');
+    final keySeed = ScopeKey<String>('Random Seed');
+    final keyRandom = ScopeKey<String>('Random Sequency');
 
     Scope()
       ..value<int>(keyAge, 10)
       ..value<String>(keyName, 'Help me')
-      ..factory<String>(keyRandom, () => getRandString(5))
+      ..single<String>(keySeed, () => getRandString(5))
+      ..sequence<String>(keyRandom, () => getRandString(6))
       ..run(() {
         print('Age: ${use(keyAge)} Name: ${use(keyName)} '
             'Random Factory: ${use(keyRandom)}');
@@ -151,24 +154,24 @@ void main() {
       expect(age, equals(18));
     });
   });
-  group('Scope.factory()', () {
-    test('calls all factories in own zone', () {
+  group('Scope.singleton()', () {
+    test('calls all singleons in own zone', () {
       final outerA = A('outer');
       final innerA = A('inner');
       final outerI = I('outer');
 
       // final scopeB = Scope()..value<B>(keyB, innerB);
-      // B factoryB() => scopeB.run(() => B());
-      // C factoryC() => C();
+      // B singletonB() => scopeB.run(() => B());
+      // C singletonC() => C();
 
       Scope()
         ..value(keyANull, outerA)
         ..value(keyI, outerI)
-        ..factory<B>(keyB, () => B())
+        ..single<B>(keyB, () => B())
         ..run(() {
           Scope()
-            ..factory<A>(keyA, () => innerA)
-            ..factory<C>(keyC, () => C())
+            ..single<A>(keyA, () => innerA)
+            ..single<C>(keyC, () => C())
             ..run(() {
               final a = use(keyA);
               expect(a, innerA);
@@ -189,12 +192,12 @@ void main() {
     test('detects circular dependencies', () {
       try {
         Scope()
-          ..factory<A>(keyA, () => A('value'))
-          ..factory<C>(keyC, () => C())
-          ..factory<D>(keyD, () => D())
-          ..factory<E>(keyE, () => E())
-          ..factory<F>(keyF, () => F())
-          ..factory<G>(keyG, () => G())
+          ..single<A>(keyA, () => A('value'))
+          ..single<C>(keyC, () => C())
+          ..single<D>(keyD, () => D())
+          ..single<E>(keyE, () => E())
+          ..single<F>(keyF, () => F())
+          ..single<G>(keyG, () => G())
           ..run(() {});
         fail('should have thrown CircularDependencyException');
       } on CircularDependencyException<dynamic> catch (e) {
@@ -203,7 +206,7 @@ void main() {
 
       try {
         Scope()
-          ..factory(keyS1, () => use(keyS1))
+          ..single(keyS1, () => use(keyS1))
           ..run(
             () {},
           );
@@ -215,11 +218,21 @@ void main() {
 
     test('handles null values', () {
       Scope()
-        ..factory(keyANull, () => null)
-        ..factory(keyC, () => C())
+        ..single(keyANull, () => null)
+        ..single(keyC, () => C())
         ..run(() {
           expect(use(keyANull), isNull);
           expect(use(keyC).a, isNull);
+        });
+    });
+
+    test('sequence', () {
+      var counter = 0;
+      Scope()
+        ..sequence(keyInt, () => counter++)
+        ..run(() {
+          use(keyInt);
+          expect(use(keyInt), 1);
         });
     });
 
@@ -233,19 +246,19 @@ void main() {
 
       expect(
           () => Scope()
-            ..factory<A>(keyA, () => A('first'))
-            ..factory<A>(keyA, () => A('second')),
+            ..single<A>(keyA, () => A('first'))
+            ..single<A>(keyA, () => A('second')),
           throwsA(isA<DuplicateDependencyException<A>>()));
 
       /// keys at different leves are not duplicates.
       Scope()
-        ..factory<A>(keyA, () => A('first'))
+        ..single<A>(keyA, () => A('first'))
         ..run(() {
           final firstA = use(keyA);
           expect(firstA.value, equals('first'));
 
           Scope()
-            ..factory<A>(keyA, () => A('second'))
+            ..single<A>(keyA, () => A('second'))
             ..run(() {
               final secondA = use(keyA);
               expect(secondA.value, equals('second'));
