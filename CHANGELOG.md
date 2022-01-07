@@ -1,3 +1,6 @@
+# 2.1.0
+- Deprecated factory in favour of single. Added sequence in favour of the originally planned generator.
+
 # 2.0.2
 updated description again.
 # 2.0.1
