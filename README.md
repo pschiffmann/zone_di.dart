@@ -38,7 +38,7 @@ void main() {
     ..value<int>(ageKey, 18)
     ..value<int>(heightKey, 182) // centimetres
     ..singleton<Db>(incomeKey, () => calcIncome)
-    ..generator<int>(countKey, () => tracker)
+    ..sequence<int>(countKey, () => tracker)
     
     /// run some code within the Scope
     ..run(() => a();

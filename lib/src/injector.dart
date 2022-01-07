@@ -15,7 +15,7 @@ class Injector {
     if (values.containsKey(key)) {
       dynamic value = values[key];
 
-      /// If the value is a function then we have a generator
+      /// If the value is a function then we have a sequence
       /// which is called each time [use] is called.
       if (value is Function) {
         // ignore: avoid_dynamic_calls

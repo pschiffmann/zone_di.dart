@@ -11,7 +11,7 @@ part 'scope_key.dart';
 part 'injector.dart';
 part 'singleton_injector.dart';
 
-typedef Generator = dynamic Function();
+typedef Factory = dynamic Function();
 
 class Scope {
   Scope([String? debugName]) {
@@ -24,8 +24,8 @@ class Scope {
   late final String _debugName;
 
   final provided = <ScopeKey<dynamic>, dynamic>{};
-  final _singletons = <ScopeKey<dynamic>, Generator>{};
-  final _generators = <ScopeKey<dynamic>, Generator>{};
+  final _singletons = <ScopeKey<dynamic>, Factory>{};
+  final _sequences = <ScopeKey<dynamic>, Factory>{};
 
   /// Injects [value] into the [Scope].
   ///
@@ -67,11 +67,11 @@ class Scope {
   /// the [sequence]s [factory] method is called each time [use] for
   /// the [sequence]'s key is called.
   ///
-  /// The [generator] [factory] method is NOT called when the [run] method
+  /// The [sequence] [factory] method is NOT called when the [run] method
   /// is called.
   ///
   void sequence<T>(ScopeKey<T> key, T Function() factory) {
-    if (_generators.containsKey(key)) {
+    if (_sequences.containsKey(key)) {
       throw DuplicateDependencyException(key);
     }
     value<dynamic>(key, factory);
