@@ -37,7 +37,9 @@ void main() {
     /// inject values
     ..value<int>(ageKey, 18)
     ..value<int>(heightKey, 182) // centimetres
+    /// single value from factory method
     ..single<Db>(incomeKey, () => calcIncome)
+    /// sequence of values from factory method.
     ..sequence<int>(countKey, () => tracker)
     
     /// run some code within the Scope
