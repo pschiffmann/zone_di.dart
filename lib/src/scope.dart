@@ -106,6 +106,14 @@ class Scope {
     }, zoneValues: {Injector: injector});
   }
 
+  /// Returns the value provided for [key], or the keys default value if no
+  /// value was provided.
+  ///
+  /// A [MissingDependencyException] will be thrown if the passed [key]
+  /// is not in scope.
+  ///
+  /// A [CircularDependencyException] will be thrown if a circular
+  /// dependency is discovered values provided by [single] or [sequence].
   static T use<T>(ScopeKey<T> key) => _use(key);
 
   /// Returns true if [key] is contained within the current scope
@@ -120,13 +128,13 @@ typedef ValueFactory<T> = T? Function();
 /// Returns the value provided for [key], or the keys default value if no
 /// value was provided.
 ///
-/// May throw [MissingDependencyException] or [CircularDependencyException].
+/// A [MissingDependencyException] will be thrown if the passed [key]
+/// is not in scope.
+///
+/// A [CircularDependencyException] will be thrown if a circular
+/// dependency is discovered values provided by [single] or [sequence].
 T use<T>(ScopeKey<T> key) => _use(key);
 
-/// Returns the value provided for [key], or the keys default value if no
-/// value was provided.
-///
-/// May throw [MissingDependencyException] or [CircularDependencyException].
 T _use<T>(ScopeKey<T> key) {
   final injector =
       (Zone.current[Injector] as Injector?) ?? const Injector.empty();
