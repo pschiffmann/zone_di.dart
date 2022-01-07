@@ -154,15 +154,15 @@ void main() {
       expect(age, equals(18));
     });
   });
-  group('Scope.singleton()', () {
+  group('Scope.single()', () {
     test('calls all singleons in own zone', () {
       final outerA = A('outer');
       final innerA = A('inner');
       final outerI = I('outer');
 
       // final scopeB = Scope()..value<B>(keyB, innerB);
-      // B singletonB() => scopeB.run(() => B());
-      // C singletonC() => C();
+      // B singleB() => scopeB.run(() => B());
+      // C singleC() => C();
 
       Scope()
         ..value(keyANull, outerA)

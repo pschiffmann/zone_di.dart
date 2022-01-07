@@ -1,8 +1,8 @@
 part of scope;
 
 /// Used by [Scope.single].
-class SingletonInjector extends Injector {
-  SingletonInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
+class SingleInjector extends Injector {
+  SingleInjector(this.factories) : super(<ScopeKey<dynamic>, dynamic>{});
 
   final Map<ScopeKey<dynamic>, ValueFactory<dynamic>> factories;
 

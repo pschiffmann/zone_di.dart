@@ -9,7 +9,7 @@ import 'exceptions.dart';
 
 part 'scope_key.dart';
 part 'injector.dart';
-part 'singleton_injector.dart';
+part 'single_injector.dart';
 
 typedef Factory = dynamic Function();
 
@@ -24,7 +24,7 @@ class Scope {
   late final String _debugName;
 
   final provided = <ScopeKey<dynamic>, dynamic>{};
-  final _singletons = <ScopeKey<dynamic>, Factory>{};
+  final _singles = <ScopeKey<dynamic>, Factory>{};
   final _sequences = <ScopeKey<dynamic>, Factory>{};
 
   /// Injects [value] into the [Scope].
@@ -45,16 +45,16 @@ class Scope {
 
   /// Injects a [single] value into the [Scope].
   ///
-  /// Singletons may [use] [value]s, other [single]s
+  /// A [single] may [use] [value]s, other [single]s
   /// and [sequence]s registered within the same [Scope].
   ///
   /// Each [single] is eagerly called when [Scope.run] is called
   /// and are fully resolved when the [Scope.run]'s s action is called.
   void single<T>(ScopeKey<T> key, T Function() factory) {
-    if (_singletons.containsKey(key)) {
+    if (_singles.containsKey(key)) {
       throw DuplicateDependencyException(key);
     }
-    _singletons.putIfAbsent(key, () => factory);
+    _singles.putIfAbsent(key, () => factory);
   }
 
   /// Injects a generated value into the [Scope].
@@ -79,7 +79,7 @@ class Scope {
 
   /// Runs [action] within the defined [Scope].
   R run<R>(R Function() action) {
-    _resolveSingletons();
+    _resolveSingles();
 
     return runZoned(action, zoneValues: {
       Injector:
@@ -93,12 +93,12 @@ class Scope {
     });
   }
 
-  void _resolveSingletons() {
-    final injector = SingletonInjector(_singletons);
+  void _resolveSingles() {
+    final injector = SingleInjector(_singles);
     runZoned(() {
       injector.zone = Zone.current;
       // Cause [injector] to call all factories.
-      for (final key in _singletons.keys) {
+      for (final key in _singles.keys) {
         /// Resolve the singlton by calling its factory method
         /// and adding it as a value.
         value<dynamic>(key, injector.get<dynamic>(key));
